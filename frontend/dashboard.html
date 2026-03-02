@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Dashboard - Sentinel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">🛡️ Sentinel</h1>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="analyze.html">Analyze</a></li>
+                <li><a href="reports.html">Reports</a></li>
+                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Community Dashboard</h1>
+            <p>Real-time insights into phishing campaigns and community threats</p>
+            <div class="last-updated">
+                Last updated: <span id="lastUpdated">--</span>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingDashboard" class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading dashboard...</p>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboardContent" class="dashboard-content" style="display: none;">
+            
+            <!-- Key Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">📊</div>
+                    <div class="metric-details">
+                        <div class="metric-value" id="totalThreats">0</div>
+                        <div class="metric-label">Active Threats</div>
+                        <div class="metric-change" id="threatsChange">--</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">👥</div>
+                    <div class="metric-details">
+                        <div class="metric-value" id="affectedUsers">0</div>
+                        <div class="metric-label">Affected Users</div>
+                        <div class="metric-change" id="usersChange">--</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">🚨</div>
+                    <div class="metric-details">
+                        <div class="metric-value" id="campaignsDetected">0</div>
+                        <div class="metric-label">Campaigns Detected</div>
+                        <div class="metric-change" id="campaignsChange">--</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">🛡️</div>
+                    <div class="metric-details">
+                        <div class="metric-value" id="preventedAttacks">0</div>
+                        <div class="metric-label">Attacks Prevented</div>
+                        <div class="metric-change positive" id="preventedChange">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Campaigns -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>🚨 Active Scam Campaigns</h2>
+                    <button class="btn btn-sm btn-outline" onclick="refreshDashboard()">Refresh</button>
+                </div>
+                
+                <div id="campaignsContainer" class="campaigns-container">
+                    <!-- Campaigns will be dynamically inserted -->
+                </div>
+            </div>
+
+            <!-- Psychological Tactics Distribution -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>🧠 Manipulation Tactics (Last 7 Days)</h2>
+                </div>
+                
+                <div class="tactics-chart">
+                    <div class="chart-bar">
+                        <div class="bar-label">Fear</div>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-fear" id="fearBar" style="width: 0%"></div>
+                            <span class="bar-value" id="fearCount">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-bar">
+                        <div class="bar-label">Authority</div>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-authority" id="authorityBar" style="width: 0%"></div>
+                            <span class="bar-value" id="authorityCount">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-bar">
+                        <div class="bar-label">Urgency</div>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-urgency" id="urgencyBar" style="width: 0%"></div>
+                            <span class="bar-value" id="urgencyCount">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-bar">
+                        <div class="bar-label">Reward</div>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-reward" id="rewardBar" style="width: 0%"></div>
+                            <span class="bar-value" id="rewardCount">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Alerts -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>📢 Community Advisories</h2>
+                </div>
+                
+                <div id="advisoriesContainer" class="advisories-container">
+                    <!-- Advisories will be dynamically inserted -->
+                </div>
+            </div>
+
+            <!-- Trending Patterns -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>📈 Trending Patterns</h2>
+                </div>
+                
+                <div id="patternsContainer" class="patterns-grid">
+                    <!-- Pattern cards will be dynamically inserted -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Error State -->
+        <div id="errorStateDashboard" class="error-section" style="display: none;">
+            <div class="error-card">
+                <h3>⚠️ Failed to Load Dashboard</h3>
+                <p id="dashboardError"></p>
+                <button class="btn btn-secondary" onclick="refreshDashboard()">Retry</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Sentinel Project</p>
+    </footer>
+
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
