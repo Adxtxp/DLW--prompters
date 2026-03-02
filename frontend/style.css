@@ -425,6 +425,26 @@ textarea {
 .intervention-content {
     font-size: 1.1rem;
     line-height: 1.8;
+    white-space: pre-wrap;
+}
+
+.simple-mode-indicator {
+    padding: 0.5rem 1rem;
+    background: #e3f2fd;
+    border: 2px solid #2196f3;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1976d2;
+}
+
+.mode-note {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--secondary-color);
 }
 
 .technical-info {

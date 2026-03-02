@@ -52,8 +52,10 @@ async function callAnalyzeAPI(messageData) {
     return new Promise((resolve) => {
         setTimeout(() => {
             const intervention = messageData.simpleMode 
-                ? "This message is trying to scare you into acting quickly. Take your time. Call your bank directly using the number on your card, not the one in this message."
-                : "Stop. Do not click any links. Government agencies do not demand payment via SMS. Verify through official hotline.";
+                ? "🧓 SIMPLE EXPLANATION:\n\nThis message is suspicious. Here's what to do:\n\n1. DO NOT click any links in the message\n2. DO NOT call any phone numbers in the message\n3. Close this message\n4. If it claims to be from your bank, call the number on the BACK of your bank card\n5. If it claims to be from the government, visit the official government website directly\n6. When in doubt, ask a family member or friend for help\n\nScammers use scary words to make you panic and act quickly. Take your time. You are in control."
+                : "⚠️ TECHNICAL ANALYSIS:\n\nStop. Do not click any links. Government agencies do not demand payment via SMS. Verify through official hotline. This message exhibits classic social engineering patterns designed to exploit urgency and authority bias.";
+            
+            const simpleModeNote = messageData.simpleMode ? "(Simple mode active - explanation simplified for accessibility)" : "";
             
             resolve({
                 risk_score: 88,
@@ -61,6 +63,8 @@ async function callAnalyzeAPI(messageData) {
                 tactics: ["Authority", "Urgency"],
                 signals: ["Requests immediate action", "Suspicious link", "Claims to be from government"],
                 intervention: intervention,
+                simple_mode: messageData.simpleMode,
+                simple_mode_note: simpleModeNote,
                 technical: "No SPF/DKIM detected. Suspicious domain pattern."
             });
         }, 1500);
