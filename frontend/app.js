@@ -8,10 +8,20 @@ const API_BASE_URL = 'http://localhost:8000';
    =========================== */
 
 function getMockReports() {
+    // Version key forces localStorage to reinitialize when seed format changes
+    const STORAGE_VERSION = '3';
+    const storedVersion = localStorage.getItem('sentinel_version');
+    
+    if (storedVersion !== STORAGE_VERSION) {
+        localStorage.removeItem('sentinel_reports');
+        localStorage.setItem('sentinel_version', STORAGE_VERSION);
+    }
+    
     const stored = localStorage.getItem('sentinel_reports');
     
     if (!stored) {
-        // Initialize with 5 hardcoded mock reports
+        // Initialize with 5 hardcoded mock reports — marked _seed:true so they
+        // are NEVER counted as real community submissions
         const initialReports = [
             {
                 id: 1,
@@ -21,7 +31,8 @@ function getMockReports() {
                 risk_level: "High",
                 risk_score: 92,
                 tactics: ["Urgency", "Fear"],
-                sender: "+65-9XXX-XXXX"
+                sender: "+65-9XXX-XXXX",
+                _seed: true
             },
             {
                 id: 2,
@@ -31,7 +42,8 @@ function getMockReports() {
                 risk_level: "High",
                 risk_score: 88,
                 tactics: ["Authority", "Fear"],
-                sender: "+65-8XXX-XXXX"
+                sender: "+65-8XXX-XXXX",
+                _seed: true
             },
             {
                 id: 3,
@@ -41,7 +53,8 @@ function getMockReports() {
                 risk_level: "High",
                 risk_score: 85,
                 tactics: ["Authority", "Urgency"],
-                sender: "noreply@dbs-verify.com"
+                sender: "noreply@dbs-verify.com",
+                _seed: true
             },
             {
                 id: 4,
@@ -51,7 +64,8 @@ function getMockReports() {
                 risk_level: "Medium",
                 risk_score: 62,
                 tactics: ["Urgency"],
-                sender: "+65-9XXX-YYYY"
+                sender: "+65-9XXX-YYYY",
+                _seed: true
             },
             {
                 id: 5,
@@ -61,7 +75,8 @@ function getMockReports() {
                 risk_level: "Medium",
                 risk_score: 58,
                 tactics: ["Reward"],
-                sender: "lucky-draw@prizes.net"
+                sender: "lucky-draw@prizes.net",
+                _seed: true
             }
         ];
         
@@ -70,6 +85,11 @@ function getMockReports() {
     }
     
     return JSON.parse(stored);
+}
+
+/* Returns ONLY real user-submitted reports (never the seed data) */
+function getSubmittedReports() {
+    return getMockReports().filter(r => !r._seed);
 }
 
 function saveMockReport(newReport) {
@@ -261,10 +281,10 @@ async function callAnalyzeAPI(messageData) {
                 if (matchingCluster) {
                     similarCount = matchingCluster.report_count;
                 } else {
-                    // Fallback: count localStorage reports with any overlapping tactic
-                    const storedReports = getMockReports();
+                    // Fallback: count only REAL submitted localStorage reports (not seed data)
+                    const submitted = getSubmittedReports();
                     const tacticWords = analyzedTactic.split(' + ');
-                    similarCount = storedReports.filter(r => {
+                    similarCount = submitted.filter(r => {
                         const rt = (r.tactics || []).join(' ').toLowerCase();
                         return tacticWords.some(tw => rt.includes(tw));
                     }).length;
@@ -314,10 +334,10 @@ async function callAnalyzeAPI(messageData) {
                 
                 const simpleModeNote = messageData.simpleMode ? "(Simple mode active - explanation simplified for accessibility)" : "";
                 
-                // Count REAL localStorage reports with matching tactics — no random numbers
-                const storedReports = getMockReports();
+                // Count REAL submitted reports with matching tactics — excludes seed data, no random numbers
+                const submitted = getSubmittedReports();
                 const analyzedTactics = analysis.tactics.map(t => t.toLowerCase());
-                const similarCount = storedReports.filter(r => {
+                const similarCount = submitted.filter(r => {
                     const reportTactics = (r.tactics || []).map(t => t.toLowerCase());
                     return analyzedTactics.some(t => t !== 'none' && reportTactics.includes(t));
                 }).length;
