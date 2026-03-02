@@ -7,9 +7,14 @@ let currentAnalysisData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('analyzeForm');
+    const submitBtn = document.getElementById('submitCommunityBtn');
     
     if (form) {
         form.addEventListener('submit', handleAnalyzeSubmit);
+    }
+    
+    if (submitBtn) {
+        submitBtn.addEventListener('click', handleSubmitToCommunity);
     }
 });
 
@@ -165,62 +170,65 @@ function resetForm() {
     document.getElementById('errorSection').style.display = 'none';
     currentAnalysisData = null; // Clear stored data
     
-    // Reset save button if it exists
-    const saveBtn = document.querySelector('[onclick="saveReport()"]');
-    if (saveBtn) {
-        saveBtn.textContent = 'Save Report';
-        saveBtn.disabled = false;
-        saveBtn.classList.remove('btn-success');
-        saveBtn.classList.add('btn-outline');
+    // Reset submit to community button if it exists
+    const submitBtn = document.getElementById('submitCommunityBtn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Submit to Community';
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('btn-success');
+        submitBtn.classList.add('btn-primary');
     }
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function saveReport() {
+function handleSubmitToCommunity(event) {
+    event.preventDefault();
+    
     // Check if there's data to save
     if (!currentAnalysisData) {
-        alert('Please analyze a message first before saving.');
+        alert('❌ Please analyze a message first before submitting.');
         return;
     }
     
-    // Get the save button
-    const saveBtn = event?.target || document.querySelector('[onclick="saveReport()"]');
-    if (!saveBtn) return;
+    // Get the submit button
+    const submitBtn = document.getElementById('submitCommunityBtn');
+    if (!submitBtn) return;
     
     // Disable button and show loading state
-    const originalText = saveBtn.textContent;
-    saveBtn.textContent = 'Saving...';
-    saveBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    submitBtn.disabled = true;
     
     try {
-        // Call the save API
-        const response = await callSaveReportAPI(currentAnalysisData);
+        // Prepare report data for saving
+        const reportToSave = {
+            timestamp: currentAnalysisData.timestamp,
+            message_snippet: currentAnalysisData.message.substring(0, 100) + (currentAnalysisData.message.length > 100 ? '...' : ''),
+            message_type: currentAnalysisData.message_type,
+            risk_level: currentAnalysisData.risk_level,
+            risk_score: currentAnalysisData.risk_score,
+            tactics: currentAnalysisData.tactics,
+            sender: currentAnalysisData.sender || 'Unknown'
+        };
+        
+        // Save to localStorage mock database
+        const savedReport = saveMockReport(reportToSave);
         
         // Success! Update button
-        saveBtn.textContent = '✅ Saved to Community';
-        saveBtn.classList.remove('btn-outline');
-        saveBtn.classList.add('btn-success');
+        submitBtn.textContent = '✅ Saved to Community';
+        submitBtn.classList.remove('btn-primary');
+        submitBtn.classList.add('btn-success');
         
         // Show success message
-        alert(`✅ Success!\n\nYour report has been saved to the community database.\nReport ID: ${response.report_id}\n\nThis helps protect others from similar scams.`);
+        alert(`✅ Success!\n\nYour report has been submitted to the community database.\nReport ID: #${savedReport.id}\n\nThis helps protect others from similar scams.\n\nView all reports on the Reports page.`);
         
     } catch (error) {
         // Error handling
-        console.error('Failed to save report:', error);
-        alert('❌ Failed to save report. Please try again.');
+        console.error('Failed to submit report:', error);
+        alert('❌ Failed to submit report. Please try again.');
         
         // Reset button on error
-        saveBtn.textContent = originalText;
-        saveBtn.disabled = false;
-    }
-}
-
-function submitToCommunity() {
-    if (confirm('Submit this report to the community database for threat detection?')) {
-        // TODO: Call backend API to submit report
-        alert('Report submitted to community! This will help detect scam campaigns. (Backend integration pending)');
-        // Optionally redirect to reports or dashboard
-        // window.location.href = 'dashboard.html';
+        submitBtn.textContent = 'Submit to Community';
+        submitBtn.disabled = false;
     }
 }

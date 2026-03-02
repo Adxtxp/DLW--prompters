@@ -2,86 +2,6 @@
    Dashboard Page Logic
    =========================== */
 
-// Mock data
-const MOCK_DASHBOARD_DATA = {
-    metrics: {
-        totalThreats: 23,
-        affectedUsers: 147,
-        campaignsDetected: 4,
-        preventedAttacks: 89
-    },
-    campaigns: [
-        {
-            id: 1,
-            name: "Fake Government Fine SMS",
-            report_count: 12,
-            risk_level: "High",
-            common_tactic: "Authority + Fear",
-            indicators: {
-                domains: ["gov-sg-fines.com", "sgfine-pay.net"],
-                phone_numbers: ["+65-9123-XXXX", "+65-8234-XXXX"]
-            },
-            first_seen: "2026-03-01T14:30:00",
-            last_seen: "2026-03-02T09:15:00",
-            description: "SMS claiming unpaid government fines with payment link"
-        },
-        {
-            id: 2,
-            name: "Bank Account Verification",
-            report_count: 8,
-            risk_level: "High",
-            common_tactic: "Urgency + Authority",
-            indicators: {
-                domains: ["dbs-verify.com", "ocbc-secure-login.net"],
-                phone_numbers: []
-            },
-            first_seen: "2026-02-28T10:00:00",
-            last_seen: "2026-03-02T08:30:00",
-            description: "Phishing emails requesting account verification"
-        },
-        {
-            id: 3,
-            name: "Package Delivery Scam",
-            report_count: 3,
-            risk_level: "Medium",
-            common_tactic: "Urgency",
-            indicators: {
-                domains: ["track-parcel-sg.com"],
-                phone_numbers: ["+65-9876-YYYY"]
-            },
-            first_seen: "2026-03-01T16:45:00",
-            last_seen: "2026-03-01T20:10:00",
-            description: "Fake delivery notifications with tracking links"
-        }
-    ],
-    tactics: {
-        fear: 45,
-        authority: 67,
-        urgency: 82,
-        reward: 34
-    },
-    advisories: [
-        {
-            title: "High Alert: Government Fine SMS Campaign",
-            severity: "critical",
-            date: "2026-03-02T09:00:00",
-            message: "Multiple reports of SMS messages claiming unpaid government fines. Do not click links. Verify through official channels."
-        },
-        {
-            title: "Banking Phishing Surge",
-            severity: "high",
-            date: "2026-03-01T15:30:00",
-            message: "Increase in fake bank verification emails. Check sender address carefully."
-        },
-        {
-            title: "Weekend Delivery Scams Expected",
-            severity: "medium",
-            date: "2026-02-28T18:00:00",
-            message: "Historical pattern shows delivery scams increase on weekends."
-        }
-    ]
-};
-
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
 });
@@ -100,8 +20,98 @@ async function loadDashboard() {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Use mock data
-        const data = MOCK_DASHBOARD_DATA;
+        // Get reports from localStorage and calculate dashboard data
+        const reports = getMockReports();
+        
+        // Calculate metrics dynamically
+        const metrics = {
+            totalThreats: reports.length,
+            affectedUsers: reports.length * 6, // Rough estimate
+            campaignsDetected: Math.floor(reports.filter(r => r.risk_level === 'High').length / 3),
+            preventedAttacks: reports.length * 4 // Rough estimate
+        };
+        
+        // Group similar reports into campaigns (simplified clustering)
+        const campaigns = [];
+        const tacticGroups = {};
+        
+        reports.forEach(report => {
+            const tacticKey = report.tactics.join('+');
+            if (!tacticGroups[tacticKey]) {
+                tacticGroups[tacticKey] = [];
+            }
+            tacticGroups[tacticKey].push(report);
+        });
+        
+        Object.keys(tacticGroups).forEach((tacticKey, index) => {
+            const group = tacticGroups[tacticKey];
+            if (group.length >= 2) { // Only show as campaign if 2+ reports
+                const highestRisk = group.reduce((max, r) => r.risk_score > max ? r.risk_score : max, 0);
+                const riskLevel = highestRisk >= 70 ? 'High' : (highestRisk >= 40 ? 'Medium' : 'Low');
+                
+                campaigns.push({
+                    id: index + 1,
+                    name: `${tacticKey} Campaign`,
+                    report_count: group.length,
+                    risk_level: riskLevel,
+                    common_tactic: tacticKey,
+                    indicators: {
+                        domains: [],
+                        phone_numbers: group.map(r => r.sender).filter(s => s.includes('+'))
+                    },
+                    first_seen: group[group.length - 1].timestamp,
+                    last_seen: group[0].timestamp,
+                    description: `Detected ${group.length} similar messages using ${tacticKey} tactics`
+                });
+            }
+        });
+        
+        // Calculate tactics distribution
+        const tacticsCount = { fear: 0, authority: 0, urgency: 0, reward: 0 };
+        reports.forEach(report => {
+            report.tactics.forEach(tactic => {
+                const key = tactic.toLowerCase();
+                if (tacticsCount[key] !== undefined) {
+                    tacticsCount[key]++;
+                }
+            });
+        });
+        
+        // Generate advisories based on campaigns
+        const advisories = campaigns
+            .filter(c => c.report_count >= 5)
+            .map(c => ({
+                title: `Campaign Alert: ${c.name}`,
+                severity: c.risk_level === 'High' ? 'critical' : 'high',
+                date: c.last_seen,
+                message: `${c.report_count} reports detected using ${c.common_tactic} tactics. Exercise extreme caution.`
+            }));
+        
+        if (advisories.length === 0) {
+            advisories.push({
+                title: "Community Monitoring Active",
+                severity: "medium",
+                date: new Date().toISOString(),
+                message: "No major campaigns detected. Continue reporting suspicious messages."
+            });
+        }
+        
+        const data = {
+            metrics: metrics,
+            campaigns: campaigns.length > 0 ? campaigns : [{
+                id: 1,
+                name: "No Active Campaigns",
+                report_count: 0,
+                risk_level: "Low",
+                common_tactic: "None",
+                indicators: { domains: [], phone_numbers: [] },
+                first_seen: new Date().toISOString(),
+                last_seen: new Date().toISOString(),
+                description: "System is actively monitoring for patterns"
+            }],
+            tactics: tacticsCount,
+            advisories: advisories
+        };
         
         // Populate dashboard
         populateMetrics(data.metrics);
