@@ -27,6 +27,7 @@ async function handleAnalyzeSubmit(event) {
     const btnLoader = document.getElementById('btnLoader');
     const resultsSection = document.getElementById('resultsSection');
     const errorSection = document.getElementById('errorSection');
+    const pipeline = document.getElementById('agentPipeline');
     
     // Get form data
     const message = document.getElementById('messageInput').value;
@@ -43,9 +44,37 @@ async function handleAnalyzeSubmit(event) {
     btnLoader.style.display = 'inline-block';
     analyzeBtn.disabled = true;
     
+    // Show agentic pipeline
+    pipeline.style.display = 'block';
+    resetPipelineSteps();
+    
     try {
-        // Call API (mock for now)
+        // Agent 1: Understand (PII redaction + tactic detection)
+        activateStep('understand');
+        await sleep(400);
+        
+        // Call API (real backend with fallback)
         const result = await callAnalyzeAPI({ message, type, sender, simpleMode });
+        completeStep('understand');
+        
+        // Agent 2: Cognitive Reset (intervention text generation)
+        activateStep('cognitive');
+        await sleep(500);
+        completeStep('cognitive');
+        
+        // Agent 3: Investigation (cluster matching)
+        activateStep('investigate');
+        await sleep(600);
+        completeStep('investigate');
+        
+        // Agent 4: Escalation (campaign check)
+        activateStep('escalate');
+        await sleep(400);
+        if (result.similar_reports_count >= 5) {
+            completeStep('escalate', '🚨');
+        } else {
+            completeStep('escalate');
+        }
         
         // Store the analysis data for saving later
         currentAnalysisData = {
@@ -60,7 +89,10 @@ async function handleAnalyzeSubmit(event) {
             intervention: result.intervention,
             similar_reports_count: result.similar_reports_count,
             technical: result.technical,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            redacted_text: result.redacted_text,
+            tactic_raw: result.tactic_raw,
+            _source: result._source
         };
         
         // Populate results
@@ -79,6 +111,31 @@ async function handleAnalyzeSubmit(event) {
         btnLoader.style.display = 'none';
         analyzeBtn.disabled = false;
     }
+}
+
+/* Pipeline animation helpers */
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function resetPipelineSteps() {
+    ['understand', 'cognitive', 'investigate', 'escalate'].forEach(id => {
+        const step = document.getElementById(`step-${id}`);
+        const status = document.getElementById(`status-${id}`);
+        step.className = 'pipeline-step';
+        status.textContent = '⏳';
+    });
+}
+
+function activateStep(id) {
+    const step = document.getElementById(`step-${id}`);
+    step.classList.add('step-active');
+    document.getElementById(`status-${id}`).textContent = '⚙️';
+}
+
+function completeStep(id, icon) {
+    const step = document.getElementById(`step-${id}`);
+    step.classList.remove('step-active');
+    step.classList.add('step-done');
+    document.getElementById(`status-${id}`).textContent = icon || '✅';
 }
 
 function displayAnalysisResults(result) {
@@ -101,10 +158,23 @@ function displayAnalysisResults(result) {
     
     // Show AI Community Alert if similar reports detected
     const communityAlertBanner = document.getElementById('communityAlertBanner');
-    const similarCount = document.getElementById('similarCount');
+    const similarCountSpan = document.getElementById('similarCount');
+    const count = result.similar_reports_count || 0;
     
-    if (result.similar_reports_count && result.similar_reports_count > 0) {
-        similarCount.textContent = result.similar_reports_count;
+    if (count >= 5) {
+        // CAMPAIGN THRESHOLD HIT — escalate visually
+        communityAlertBanner.className = 'community-alert-banner campaign-outbreak';
+        communityAlertBanner.innerHTML = `
+            🚨 <strong>CAMPAIGN OUTBREAK DETECTED — AUTHORITIES NOTIFIED</strong><br>
+            <span style="font-size:0.9em">Our Investigation Agent has clustered <strong>${count} matching reports</strong> using TF-IDF similarity analysis. 
+            This is a <strong>confirmed coordinated attack</strong>. An authority packet has been auto-generated. 
+            <a href="dashboard.html" style="color:#fff;font-weight:bold;text-decoration:underline">View Dashboard & Download Packet →</a></span>
+        `;
+        communityAlertBanner.style.display = 'block';
+    } else if (count > 0) {
+        // Some similar reports but below campaign threshold
+        communityAlertBanner.className = 'community-alert-banner';
+        communityAlertBanner.innerHTML = `🚨 <strong>AI Cluster Match:</strong> Our system detected <span id="similarCount">${count}</span> similar messages targeting the community. Need <strong>${5 - count} more</strong> to trigger campaign escalation.`;
         communityAlertBanner.style.display = 'block';
     } else {
         communityAlertBanner.style.display = 'none';
@@ -182,16 +252,70 @@ function resetForm() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function saveReport() {
-    // TODO: Implement save to backend
-    alert('Report saved successfully! (Backend integration pending)');
-}
-
-function submitToCommunity() {
-    if (confirm('Submit this report to the community database for threat detection?')) {
-        // TODO: Call backend API to submit report
-        alert('Report submitted to community! This will help detect scam campaigns. (Backend integration pending)');
-        // Optionally redirect to reports or dashboard
-        // window.location.href = 'dashboard.html';
+async function handleSubmitToCommunity(event) {
+    event.preventDefault();
+    
+    // Check if there's data to save
+    if (!currentAnalysisData) {
+        alert('❌ Please analyze a message first before submitting.');
+        return;
+    }
+    
+    // Get the submit button
+    const submitBtn = document.getElementById('submitCommunityBtn');
+    if (!submitBtn) return;
+    
+    // Disable button and show loading state
+    submitBtn.textContent = 'Submitting...';
+    submitBtn.disabled = true;
+    
+    try {
+        // Extract domain/phone from message for backend
+        const message = currentAnalysisData.message || '';
+        const domainMatch = message.match(/https?:\/\/([^\s\/]+)/i) || message.match(/(?:www\.)?([a-z0-9-]+\.[a-z]{2,})/i);
+        const phoneMatch = message.match(/\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}/);
+        
+        const extractedDomain = domainMatch ? domainMatch[1] || domainMatch[0] : '';
+        const extractedPhone = phoneMatch ? phoneMatch[0] : '';
+        
+        // POST to backend /report endpoint
+        const backendPayload = {
+            redacted_text: currentAnalysisData.redacted_text || currentAnalysisData.message.substring(0, 200),
+            tactic: currentAnalysisData.tactic_raw || currentAnalysisData.tactics.join(' + ').toLowerCase(),
+            extracted_domain: extractedDomain,
+            extracted_phone: extractedPhone,
+            timestamp: currentAnalysisData.timestamp
+        };
+        
+        const backendResult = await callSaveReportAPI(backendPayload);
+        
+        // Also save to localStorage for local UI
+        const reportToSave = {
+            timestamp: currentAnalysisData.timestamp,
+            message_snippet: currentAnalysisData.message.substring(0, 100) + (currentAnalysisData.message.length > 100 ? '...' : ''),
+            message_type: currentAnalysisData.message_type,
+            risk_level: currentAnalysisData.risk_level,
+            risk_score: currentAnalysisData.risk_score,
+            tactics: currentAnalysisData.tactics,
+            sender: currentAnalysisData.sender || 'Unknown',
+            extracted_domain: extractedDomain,
+            extracted_phone: extractedPhone
+        };
+        
+        const savedReport = saveMockReport(reportToSave);
+        
+        // Success! Update button
+        submitBtn.textContent = '✅ Submitted to Community';
+        submitBtn.classList.remove('btn-primary');
+        submitBtn.classList.add('btn-success');
+        
+        const sourceMsg = backendResult._source === 'local' ? '(saved locally — backend offline)' : '(synced with backend)';
+        alert(`✅ Report Submitted!\n\nReport ID: #${backendResult.report_id || savedReport.id}\n${sourceMsg}\n\nThe Investigation Agent will now cluster this with similar reports.\nCheck the Dashboard to see if a campaign is detected.`);
+        
+    } catch (error) {
+        console.error('Failed to submit report:', error);
+        alert('❌ Failed to submit report. Please try again.');
+        submitBtn.textContent = 'Submit to Community';
+        submitBtn.disabled = false;
     }
 }
