@@ -41,36 +41,56 @@ async def analyze_data(request: AnalysisRequest):
     # 2. Call the Agentic Triage Expert
     analysis_results = detect_tactics_and_score(request.text)
     
-    # 3. Return the expanded payload (Fixed syntax)
+    # 3. Find matching cluster from LIVE_REPORTS_DB (Phase 2.4)
+    # This gives the frontend the authoritative similar-report count for THIS tactic
+    clusters = detect_campaigns(LIVE_REPORTS_DB)
+    tactic = analysis_results["tactic"]
+    tactic_words = [w.strip() for w in tactic.lower().split("+") if w.strip() and len(w.strip()) > 2]
+    
+    cluster_info = {"report_count": 0, "campaign_detected": False, "cluster_id": None}
+    for cluster in clusters:
+        # Find the cluster whose stored reports share any tactic word with this analysis
+        for report in cluster["reports"]:
+            stored_tactic = (report.get("tactic") or "").lower()
+            if any(tw in stored_tactic for tw in tactic_words):
+                cluster_info = {
+                    "report_count": cluster["report_count"],
+                    "campaign_detected": cluster["campaign_detected"],
+                    "cluster_id": cluster["cluster_id"]
+                }
+                break
+        if cluster_info["cluster_id"] is not None:
+            break
+    
+    # 4. Combine and return the payload
     return {
         "redacted_text": safe_text,
-        "tactic": analysis_results.get("tactic", "Unknown"),
-        "risk_score": analysis_results.get("risk_score", 50),
-        "reasons": analysis_results.get("reasons", []),
-        "user_emotion": analysis_results.get("user_emotion", "Unknown"), 
-        "intervention_text": analysis_results.get("intervention_text", "Caution required."),
-        "extracted_links": analysis_results.get("suspicious_links", []),
-        "extracted_phones": analysis_results.get("phone_numbers", []),
-        "call_to_action": analysis_results.get("call_to_action", "None detected.")
+        "tactic": analysis_results["tactic"],
+        "risk_score": analysis_results["risk_score"],
+        "reasons": analysis_results["reasons"],
+        "intervention_text": analysis_results["intervention_text"],
+        "cluster_info": cluster_info
     }
+class ScamReport(BaseModel):
+    redacted_text: str
+    tactic: str
+    extracted_domain: Optional[str] = ""
+    extracted_phone: Optional[str] = ""
+    timestamp: str
 
-@app.post("/api/reports")
-async def save_report(report: ReportCreate):
-    try:
-        new_report = {
-            "id": len(LIVE_REPORTS_DB) + 1,
-            "timestamp": datetime.now().isoformat(),
-            "message_snippet": report.message[:100],
-            "message_type": report.type,
-            "risk_level": report.risk_level,
-            "risk_score": report.risk_score,
-            "tactics": report.tactics,
-            "sender": report.sender or "Unknown"
-        }
-        LIVE_REPORTS_DB.append(new_report)
-        return {"status": "success", "report_id": new_report["id"]}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# This is your live, in-memory database for the hackathon
+LIVE_REPORTS_DB = []
+
+@app.post("/report")
+async def generate_report(report: ScamReport):
+    # Convert to dictionary and assign an ID
+    new_report = report.dict()
+    new_report["id"] = len(LIVE_REPORTS_DB) + 1
+    
+    # Securely store ONLY the redacted/analyzed data
+    LIVE_REPORTS_DB.append(new_report)
+    
+    return {"status": "success", "message": "Report saved securely.", "report_id": new_report["id"]}
 
 @app.get("/reports")
 async def get_all_reports():
