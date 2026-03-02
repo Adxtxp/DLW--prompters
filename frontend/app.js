@@ -267,32 +267,37 @@ async function callAnalyzeAPI(messageData) {
         
         const simpleModeNote = messageData.simpleMode ? "(Simple mode active - explanation simplified for accessibility)" : "";
         
-        // Check clusters for similar reports count — match on tactic, not just biggest cluster
-        let similarCount = 0;
+        // Count similar reports directly from backend /reports (most reliable)
+        // +1 accounts for the current message being analyzed right now
+        let similarCount = 1;
         try {
-            const clustersRes = await fetch(`${API_BASE_URL}/clusters`);
-            if (clustersRes.ok) {
-                const clustersData = await clustersRes.json();
+            const reportsRes = await fetch(`${API_BASE_URL}/reports`);
+            if (reportsRes.ok) {
+                const reportsData = await reportsRes.json();
+                const allReports = reportsData.reports || [];
                 const analyzedTactic = backendResult.tactic; // e.g. "urgency + authority"
-                // Find the cluster whose reports share this tactic
-                const matchingCluster = clustersData.clusters.find(c =>
-                    c.reports.some(r => r.tactic === analyzedTactic)
-                );
-                if (matchingCluster) {
-                    // existing reports in cluster + 1 (this current analysis)
-                    similarCount = matchingCluster.report_count + 1;
-                } else {
-                    // Fallback: count only REAL submitted localStorage reports (not seed data) + 1
-                    const submitted = getSubmittedReports();
-                    const tacticWords = analyzedTactic.split(' + ');
-                    const existingCount = submitted.filter(r => {
-                        const rt = (r.tactics || []).join(' ').toLowerCase();
-                        return tacticWords.some(tw => rt.includes(tw));
-                    }).length;
-                    similarCount = existingCount + 1;
-                }
+                const tacticWords = analyzedTactic.toLowerCase().split(' + ').filter(Boolean);
+                
+                // Count backend reports whose tactic overlaps with the current analysis
+                const matchingCount = allReports.filter(r => {
+                    const rt = (r.tactic || '').toLowerCase();
+                    return tacticWords.some(tw => tw.length > 2 && rt.includes(tw));
+                }).length;
+                
+                // existing matching reports + 1 (this current analysis)
+                similarCount = matchingCount + 1;
+            } else {
+                // Backend /reports failed, fall back to localStorage
+                const submitted = getSubmittedReports();
+                const analyzedTactic = backendResult.tactic;
+                const tacticWords = analyzedTactic.toLowerCase().split(' + ').filter(Boolean);
+                const localCount = submitted.filter(r => {
+                    const rt = (r.tactics || []).join(' ').toLowerCase();
+                    return tacticWords.some(tw => tw.length > 2 && rt.includes(tw));
+                }).length;
+                similarCount = localCount + 1;
             }
-        } catch (_) { /* clusters check is optional */ }
+        } catch (_) { /* keep similarCount = 1 */ }
         
         return {
             risk_score: riskScore,
