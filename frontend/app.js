@@ -4,6 +4,91 @@
 const API_BASE_URL = 'http://localhost:8000/api';
 
 /* ===========================
+   LocalStorage Mock Database
+   =========================== */
+
+function getMockReports() {
+    const stored = localStorage.getItem('sentinel_reports');
+    
+    if (!stored) {
+        // Initialize with 5 hardcoded mock reports
+        const initialReports = [
+            {
+                id: 1,
+                timestamp: "2026-03-02T09:45:00",
+                message_snippet: "URGENT! Your account has been suspended. Click here within 30 minutes to verify...",
+                message_type: "sms",
+                risk_level: "High",
+                risk_score: 92,
+                tactics: ["Urgency", "Fear"],
+                sender: "+65-9XXX-XXXX"
+            },
+            {
+                id: 2,
+                timestamp: "2026-03-02T08:30:00",
+                message_snippet: "Notice from Singapore Government: You have an unpaid fine of $350. Pay immediately to avoid...",
+                message_type: "sms",
+                risk_level: "High",
+                risk_score: 88,
+                tactics: ["Authority", "Fear"],
+                sender: "+65-8XXX-XXXX"
+            },
+            {
+                id: 3,
+                timestamp: "2026-03-01T16:20:00",
+                message_snippet: "Your DBS account requires verification. Please update your details at...",
+                message_type: "email",
+                risk_level: "High",
+                risk_score: 85,
+                tactics: ["Authority", "Urgency"],
+                sender: "noreply@dbs-verify.com"
+            },
+            {
+                id: 4,
+                timestamp: "2026-03-01T14:10:00",
+                message_snippet: "Package delivery failed. Track your parcel and reschedule delivery at...",
+                message_type: "sms",
+                risk_level: "Medium",
+                risk_score: 62,
+                tactics: ["Urgency"],
+                sender: "+65-9XXX-YYYY"
+            },
+            {
+                id: 5,
+                timestamp: "2026-03-01T11:00:00",
+                message_snippet: "Congratulations! You've won $5000 in our lucky draw. Claim your prize by...",
+                message_type: "email",
+                risk_level: "Medium",
+                risk_score: 58,
+                tactics: ["Reward"],
+                sender: "lucky-draw@prizes.net"
+            }
+        ];
+        
+        localStorage.setItem('sentinel_reports', JSON.stringify(initialReports));
+        return initialReports;
+    }
+    
+    return JSON.parse(stored);
+}
+
+function saveMockReport(newReport) {
+    const reports = getMockReports();
+    
+    // Generate new ID
+    const maxId = reports.length > 0 ? Math.max(...reports.map(r => r.id)) : 0;
+    newReport.id = maxId + 1;
+    
+    // Add to beginning of array (most recent first)
+    reports.unshift(newReport);
+    
+    // Save back to localStorage
+    localStorage.setItem('sentinel_reports', JSON.stringify(reports));
+    
+    return newReport;
+}
+
+/* ===========================
    Utility Functions
    =========================== */
 
@@ -201,4 +286,25 @@ async function callDashboardAPI() {
     
     // For now, return empty (will use mock data)
     return null;
+}
+
+async function callSaveReportAPI(reportData) {
+    // Uncomment when backend is ready:
+    // const response = await fetch(`${API_BASE_URL}/reports`, {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify(reportData)
+    // });
+    // return await response.json();
+    
+    // For now, return mock success
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                success: true,
+                message: 'Report saved successfully to community database',
+                report_id: Math.floor(Math.random() * 10000) + 1000
+            });
+        }, 1000);
+    });
 }

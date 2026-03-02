@@ -2,11 +2,19 @@
    Analyze Page Logic
    =========================== */
 
+// Store current analysis data for saving
+let currentAnalysisData = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('analyzeForm');
+    const submitBtn = document.getElementById('submitCommunityBtn');
     
     if (form) {
         form.addEventListener('submit', handleAnalyzeSubmit);
+    }
+    
+    if (submitBtn) {
+        submitBtn.addEventListener('click', handleSubmitToCommunity);
     }
 });
 
@@ -38,6 +46,22 @@ async function handleAnalyzeSubmit(event) {
     try {
         // Call API (mock for now)
         const result = await callAnalyzeAPI({ message, type, sender, simpleMode });
+        
+        // Store the analysis data for saving later
+        currentAnalysisData = {
+            message: message,
+            message_type: type,
+            sender: sender,
+            simple_mode: simpleMode,
+            risk_score: result.risk_score,
+            risk_level: result.risk_level,
+            tactics: result.tactics,
+            signals: result.signals,
+            intervention: result.intervention,
+            similar_reports_count: result.similar_reports_count,
+            technical: result.technical,
+            timestamp: new Date().toISOString()
+        };
         
         // Populate results
         displayAnalysisResults(result);
@@ -144,6 +168,17 @@ function resetForm() {
     document.getElementById('analyzeForm').reset();
     document.getElementById('resultsSection').style.display = 'none';
     document.getElementById('errorSection').style.display = 'none';
+    currentAnalysisData = null; // Clear stored data
+    
+    // Reset submit to community button if it exists
+    const submitBtn = document.getElementById('submitCommunityBtn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Submit to Community';
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('btn-success');
+        submitBtn.classList.add('btn-primary');
+    }
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -152,79 +187,11 @@ function saveReport() {
     alert('Report saved successfully! (Backend integration pending)');
 }
 
-// ==========================================
-// REAL BACKEND CONNECTION (Written by Aditi)
-// ==========================================
-
-// 1. Connect to the Agentic Triage API
-async function callAnalyzeAPI(data) {
-    try {
-        const response = await fetch('http://127.0.0.1:8000/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            // Your backend AnalysisRequest schema expects {"text": "message..."}
-            body: JSON.stringify({ text: data.message })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Backend error! Status: ${response.status}`);
-        }
-
-        const backendData = await response.json();
-
-        // Calculate risk level for Isaac's CSS colors
-        let riskLevel = "Low";
-        if (backendData.risk_score >= 75) riskLevel = "High";
-        else if (backendData.risk_score >= 40) riskLevel = "Medium";
-
-        // Map your backend data to exactly what Isaac's frontend expects
-        // Notice how we inject your Agentic user_emotion right into the UI!
-        return {
-            risk_score: backendData.risk_score,
-            risk_level: riskLevel,
-            tactics: [backendData.tactic], // Wraps string in an array for his UI
-            signals: backendData.reasons,  // Maps your 'reasons' to his 'signals'
-            intervention: `🛑 Target Emotion: ${backendData.user_emotion}\n\n${backendData.intervention_text}`,
-            technical: `PII Redaction Engine output: ${backendData.redacted_text}`
-        };
-
-    } catch (error) {
-        console.error("Fetch error:", error);
-        throw new Error("Could not connect to Sentinel Backend. Is the FastAPI server running?");
-    }
-}
-
-// 2. Connect the Community Database Endpoint
-async function submitToCommunity() {
+function submitToCommunity() {
     if (confirm('Submit this report to the community database for threat detection?')) {
-        
-        // Grab the data currently on the screen
-        const reportPayload = {
-            message: document.getElementById('messageInput').value,
-            type: document.getElementById('messageType').value,
-            sender: document.getElementById('senderInfo').value || "Unknown",
-            risk_score: parseInt(document.getElementById('scoreValue').innerText),
-            risk_level: document.getElementById('riskBadge').innerText.split(" ")[0], // Grabs "High", "Medium", etc.
-            tactics: Array.from(document.querySelectorAll('#tacticsContainer li')).map(li => li.innerText)
-        };
-
-        try {
-            const response = await fetch('http://127.0.0.1:8000/api/reports', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(reportPayload)
-            });
-
-            if (response.ok) {
-                alert('Success! Your Agent securely routed this report to the global database.');
-            } else {
-                alert('Failed to save to database.');
-            }
-        } catch (error) {
-            console.error("Database error:", error);
-            alert("Could not connect to database endpoint.");
-        }
+        // TODO: Call backend API to submit report
+        alert('Report submitted to community! This will help detect scam campaigns. (Backend integration pending)');
+        // Optionally redirect to reports or dashboard
+        // window.location.href = 'dashboard.html';
     }
 }

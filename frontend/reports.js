@@ -2,60 +2,6 @@
    Reports Page Logic
    =========================== */
 
-// Mock data
-const MOCK_REPORTS = [
-    {
-        id: 1,
-        timestamp: "2026-03-02T09:45:00",
-        message_snippet: "URGENT! Your account has been suspended. Click here within 30 minutes to verify...",
-        message_type: "sms",
-        risk_level: "High",
-        risk_score: 92,
-        tactics: ["Urgency", "Fear"],
-        sender: "+65-9XXX-XXXX"
-    },
-    {
-        id: 2,
-        timestamp: "2026-03-02T08:30:00",
-        message_snippet: "Notice from Singapore Government: You have an unpaid fine of $350. Pay immediately to avoid...",
-        message_type: "sms",
-        risk_level: "High",
-        risk_score: 88,
-        tactics: ["Authority", "Fear"],
-        sender: "+65-8XXX-XXXX"
-    },
-    {
-        id: 3,
-        timestamp: "2026-03-01T16:20:00",
-        message_snippet: "Your DBS account requires verification. Please update your details at...",
-        message_type: "email",
-        risk_level: "High",
-        risk_score: 85,
-        tactics: ["Authority", "Urgency"],
-        sender: "noreply@dbs-verify.com"
-    },
-    {
-        id: 4,
-        timestamp: "2026-03-01T14:10:00",
-        message_snippet: "Package delivery failed. Track your parcel and reschedule delivery at...",
-        message_type: "sms",
-        risk_level: "Medium",
-        risk_score: 62,
-        tactics: ["Urgency"],
-        sender: "+65-9XXX-YYYY"
-    },
-    {
-        id: 5,
-        timestamp: "2026-03-01T11:00:00",
-        message_snippet: "Congratulations! You've won $5000 in our lucky draw. Claim your prize by...",
-        message_type: "email",
-        risk_level: "Medium",
-        risk_score: 58,
-        tactics: ["Reward"],
-        sender: "lucky-draw@prizes.net"
-    }
-];
-
 let allReports = [];
 let filteredReports = [];
 
@@ -79,8 +25,8 @@ async function loadReports() {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Use mock data
-        allReports = MOCK_REPORTS;
+        // Get reports from localStorage
+        allReports = getMockReports();
         filteredReports = [...allReports];
         
         // Hide loading
