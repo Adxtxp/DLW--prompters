@@ -1,128 +1,97 @@
-import pandas as pd
-from sklearn.cluster import KMeans
-
 import re
+import os
+import json
 import pandas as pd
-# We will swap KMeans for TF-IDF later in Phase 2.4
+import numpy as np
 from sklearn.cluster import KMeans 
-
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+from openai import OpenAI
+
+# Initialize OpenAI Client (Reads from the $env:OPENAI_API_KEY you set)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def redact_text(raw_text: str) -> str:
-    """
-    Phase 2.1: Redacts PII for Responsible AI compliance.
-    Never stores the raw message.
-    """
-    if not raw_text:
-        return ""
-        
-    # 1. Mask Emails (e.g., target@email.com -> [REDACTED_EMAIL])
+    """Phase 2.1: Redacts PII for Responsible AI compliance."""
+    if not raw_text: return ""
     text = re.sub(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', '[REDACTED_EMAIL]', raw_text)
-    
-    # 2. Mask Phone Numbers (Basic international and local formats)
     text = re.sub(r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}', '[REDACTED_PHONE]', text)
-    
-    # 3. Mask Long Numeric Sequences (e.g., Bank Accounts, NRICs - targets 5+ digits)
     text = re.sub(r'\b\d{5,}\b', '[REDACTED_NUMBER]', text)
-    
     return text
-
-def get_data_and_cluster(file_path: str, n_clusters: int = 2):
-    """
-    Reads prompt data from a CSV and applies KMeans clustering.
-    """
-    try:
-        # Load the data Erin will be managing
-        df = pd.read_csv(file_path)
-        
-        # Select only the numerical features for KMeans
-        X = df[['feature_1', 'feature_2']]
-        
-        # Initialize and run the KMeans model with the correct parameter
-        model = KMeans(n_clusters=n_clusters, n_init='auto', random_state=42)
-        df['cluster'] = model.fit_predict(X)
-        
-        # Convert the DataFrame back to a list of dictionaries for the API
-        return df.to_dict(orient='records')
-        
-    except FileNotFoundError:
-        # Prevents the server from crashing if the CSV is missing
-        return [{"error": f"Dataset not found at {file_path}. Please check the data folder."}]
-    except Exception as e:
-        return [{"error": f"Failed to process data: {str(e)}"}]
 
 def detect_tactics_and_score(text: str):
     """
-    Phases 2.2 & 2.3: Rule-based tactic detection and weighted risk scoring.
+    Phases 2.2 & 2.3: Agentic Triage & Forensic Extraction.
+    Uses LLM for psychological profiling with a rule-based fallback.
     """
+    # --- STEP 1: ATTEMPT AGENTIC ANALYSIS (OpenAI) ---
+    if os.getenv("OPENAI_API_KEY"):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo-0125", # High speed for real-time triage
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": (
+                        "You are a Forensic Scam Analyst. Analyze the message and return JSON with: "
+                        "'tactic' (string), 'risk_score' (int 0-100), 'reasons' (array), "
+                        "'user_emotion' (the psychological trigger being exploited), "
+                        "'intervention_text' (a cognitive reset coaching phrase), "
+                        "'suspicious_links' (array of URLs found), "
+                        "'phone_numbers' (array of phone numbers found), "
+                        "'call_to_action' (the specific instruction given)."
+                    )},
+                    {"role": "user", "content": f"Analyze this suspicious message: {text}"}
+                ]
+            )
+            return json.loads(response.choices[0].message.content)
+        except Exception as e:
+            print(f"Agentic Triage failed, falling back: {e}")
+
+    # --- STEP 2: FALLBACK RULE-BASED LOGIC (If AI fails/no key) ---
     text_lower = text.lower()
-    tactics = []
-    reasons = []
+    tactics, reasons = [], []
     risk_score = 0
     
-    # Define our keyword dictionaries
-    keyword_rules = {
-        "urgency": {
-            "words": ["urgent", "immediately", "action required", "deadline", "now"],
-            "score": 15,
-            "reason": "Contains urgent deadline language"
-        },
-        "authority": {
-            "words": ["iras", "police", "tax", "government", "bank", "court"],
-            "score": 15,
-            "reason": "Claims to be an authority figure or agency"
-        },
-        "fear": {
-            "words": ["failed", "arrest", "penalty", "jail", "suspend", "warrant"],
-            "score": 20,
-            "reason": "Uses fear-inducing or threatening language"
-        }
+    rules = {
+        "urgency": {"words": ["urgent", "immediately", "deadline"], "score": 20, "r": "Urgent deadline language"},
+        "authority": {"words": ["iras", "police", "bank", "singpass"], "score": 25, "r": "Claims authority agency"},
+        "fear": {"words": ["arrest", "penalty", "jail", "suspend"], "score": 30, "r": "Uses threatening language"}
     }
     
-    # Scan the text for keywords
-    for tactic, rule in keyword_rules.items():
-        if any(keyword in text_lower for keyword in rule["words"]):
+    for tactic, rule in rules.items():
+        if any(w in text_lower for w in rule["words"]):
             tactics.append(tactic)
-            reasons.append(rule["reason"])
+            reasons.append(rule["r"])
             risk_score += rule["score"]
-            
-    # Add scoring for URLs or OTP requests (as per your rubric)
+
     if "http" in text_lower or ".com" in text_lower:
         risk_score += 20
-        reasons.append("Contains a suspicious URL or domain")
-        
-    if "otp" in text_lower or "password" in text_lower:
-        risk_score += 30
-        reasons.append("Requests sensitive credentials (OTP/Password)")
-        
-    # Cap score at 100
-    risk_score = min(risk_score, 100)
-    
-    # Format the final tactic string (e.g., "authority + urgency")
-    final_tactic = " + ".join(tactics) if tactics else "none"
-    
+        reasons.append("Contains suspicious link")
+
     return {
-        "tactic": final_tactic,
-        "risk_score": risk_score,
+        "tactic": " + ".join(tactics) if tactics else "Unknown Manipulation",
+        "risk_score": min(risk_score, 100),
         "reasons": reasons,
-        "intervention_text": "Pause and verify this request through official channels." if risk_score > 50 else "Seems safe, but remain cautious."
-    }  
+        "user_emotion": "Anxious / Pressured (Fallback Mode)",
+        "intervention_text": "Pause. This message uses common scam tactics to rush you.",
+        "suspicious_links": re.findall(r'(https?://\S+)', text),
+        "phone_numbers": re.findall(r'\+?\d{8,}', text),
+        "call_to_action": "The message attempts to make you click a link or provide info."
+    }
+
+# --- REMAINING FUNCTIONS (Erin's Clustering & Authority Packets) ---
 
 def detect_campaigns(reports: list):
     """
-    Phase 2.4: Core Public Safety Layer using TF-IDF and Cosine Similarity.
+    Phase 2.4: Core Public Safety Layer with Dynamic Narratives.
+    Triggers 'Serious' status at 4 and 'Authority Escalation' at 5.
     """
     if not reports:
         return []
 
-    # 1. TF-IDF Vectorization
     texts = [r.get("redacted_text", "") for r in reports]
     vectorizer = TfidfVectorizer()
     tfidf_matrix = vectorizer.fit_transform(texts)
-    
-    # 2. Cosine Similarity Matrix
     cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
 
     clusters = []
@@ -138,49 +107,51 @@ def detect_campaigns(reports: list):
         for j in range(i + 1, len(reports)):
             if j in visited:
                 continue
-
-            r1, r2 = reports[i], reports[j]
-            
-            # 3. Clustering Logic (Domain OR Phone OR Similarity > 0.75)
-            same_domain = r1.get("extracted_domain") and r1.get("extracted_domain") == r2.get("extracted_domain")
-            same_phone = r1.get("extracted_phone") and r1.get("extracted_phone") == r2.get("extracted_phone")
-            high_sim = cosine_sim[i][j] > 0.75
-
-            if same_domain or same_phone or high_sim:
-                current_cluster.append(r2)
+            if cosine_sim[i][j] > 0.75:
+                current_cluster.append(reports[j])
                 visited.add(j)
 
-        # 4. Campaign Detection Trigger (≥ 5 reports)
-        is_campaign = len(current_cluster) >= 5
+        count = len(current_cluster)
         
+        # --- DYNAMIC NARRATIVE LOGIC ---
+        if count >= 5:
+            status = "CRITICAL"
+            narrative = "🚨 Campaign Verified: Alerting authorities via generated report."
+            color = "red"
+        elif count == 4:
+            status = "SERIOUS"
+            narrative = "⚠️ Serious Threat: Multiple community matches detected."
+            color = "orange"
+        elif count > 1:
+            status = "EMERGING"
+            narrative = f"🔍 Emerging Pattern: {count} similar reports detected."
+            color = "yellow"
+        else:
+            status = "ISOLATED"
+            narrative = "✅ First report of this type. Monitoring for patterns."
+            color = "green"
+
         clusters.append({
             "cluster_id": len(clusters) + 1,
-            "report_count": len(current_cluster),
-            "campaign_detected": is_campaign,
+            "report_count": count,
+            "campaign_detected": count >= 5,
+            "status": status,
+            "narrative": narrative,
+            "ui_color": color,
             "reports": current_cluster
         })
 
     return clusters
+     
 
 def generate_authority_packet(cluster: dict):
-    """
-    Phase 2.5: Authority Packet Generator returning structured JSON.
-    """
-    # Extract unique indicators
-    domains = list(set([r.get("extracted_domain") for r in cluster["reports"] if r.get("extracted_domain")]))
-    phones = list(set([r.get("extracted_phone") for r in cluster["reports"] if r.get("extracted_phone")]))
-    
-    # Grab the primary tactic (simplification: grab the first report's tactic)
-    tactic = cluster["reports"][0].get("tactic", "unknown") if cluster["reports"] else "unknown"
-
+    """Phase 2.5: Authority Packet Generator returning structured JSON."""
     return {
         "cluster_id": cluster["cluster_id"],
         "report_count": cluster["report_count"],
-        "tactic": tactic,
         "indicators": {
-            "domains": domains,
-            "phones": phones
+            "links": list(set([r.get("extracted_domain") for r in cluster["reports"] if r.get("extracted_domain")])),
+            "phones": list(set([r.get("extracted_phone") for r in cluster["reports"] if r.get("extracted_phone")]))
         },
-        "time_window": "Last 48 hours",
-        "recommendation": "Issue advisory and report to cybercrime unit." if cluster["campaign_detected"] else "Monitor for further activity."
-    } 
+        "recommendation": "ESCALATE: High-frequency campaign detected." if cluster["campaign_detected"] else "Monitor."
+    }
