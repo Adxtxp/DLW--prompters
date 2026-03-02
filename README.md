@@ -1,4 +1,3 @@
-# DLW--prompters
 # 🛡️ Sentinel: Human-Centric Scam Early Warning Network
 
 **Sentinel** is a psychology-aware, community-level threat intelligence system that detects digital manipulation, intervenes to protect vulnerable users, and coordinates public safety responses across communities.
@@ -40,11 +39,42 @@ Sentinel is powered by a multi-agent AI pipeline designed to turn raw, noisy sig
 
 ## 🚀 Quickstart: How to Run Locally
 
-To test Sentinel on your local machine, you will need to start both the Python backend and the web frontend.
+To test Sentinel on your local machine, you will need to open **TWO separate terminal windows** to start both the AI engine (backend) and the user interface (frontend).
 
-### 1. Start the Backend (FastAPI)
-Open your terminal, ensure your virtual environment is activated, and run:
+### Terminal 1: Start the Backend AI Engine
+Open your first terminal, activate your virtual environment, and run:
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload
+uvicorn app:app --reload
+```
+*⚠️ Note: The terminal will display a link (e.g., `http://127.0.0.1:8000`). **Do not click this link.** This is the raw data engine, not the user interface.*
+
+### Terminal 2: Start the Frontend UI
+Open a **second, new terminal window**, navigate to the frontend folder, and launch the local web server:
+```bash
+cd frontend
+python -m http.server 8080
+```
+
+### 🖥️ View the Application
+Once both terminals are running, **open your web browser** (Chrome, Edge, Safari) and manually type this exact address into the URL bar:
+**`http://localhost:8080`**
+
+From there, you will see the Sentinel dashboard and can begin using the testbench files!
+
+---
+
+## 🧪 Demo & Testbench
+
+We have prepared a simulated threat feed so you can experience Sentinel's community clustering in action. 
+
+Please navigate to the `testbench/` directory and read `SETUP_AND_RUN.md` for exact instructions on how to trigger the **Campaign Detected** moment using our sample phishing data.
+
+---
+
+## ⚖️ Responsible AI & Privacy-by-Design
+
+Because public safety tools must protect user trust, Sentinel is built with strict privacy constraints:
+* **Zero-Raw Storage:** All messages pass through a strict Regex-based redaction function before processing. Emails, phone numbers, and identifying sequences are stripped out.
+* **Metadata Only:** The database only stores anonymized psychological indicators, timestamps, and extracted malicious domains. No personal communications are ever saved.
