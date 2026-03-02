@@ -4,7 +4,8 @@ from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from logic import get_data_and_cluster, redact_text, detect_tactics_and_score
+
+from logic import get_data_and_cluster, redact_text, detect_tactics_and_score, detect_campaigns, generate_authority_packet
 
 
 
@@ -60,25 +61,40 @@ async def generate_report():
 async def get_all_reports():
     return {"reports": []}
 
-# UPDATED: Phase 2 - Connecting to the real CSV dataset
-@app.get("/clusters")
-async def get_clusters():
-    # Point directly to the CSV in the data folder
-    data_path = "data/prompter_dataset.csv"
-    
-    # Run the scikit-learn clustering model
-    results = get_data_and_cluster(data_path)
-    return {"clusters": results}
+
 
 @app.post("/clusters/{cluster_id}/advisory")
 async def post_advisory(cluster_id: int, advisory: ClusterAdvisory):
     return {"message": f"Advisory added to cluster {cluster_id}"}
 
+
+
+# Mock DB for testing Phase 2.4/2.5
+MOCK_REPORTS_DB = [
+    {"id": 1, "redacted_text": "URGENT: Your IRAS tax return failed. Call [REDACTED_PHONE].", "tactic": "urgency + authority", "extracted_domain": "fake-iras-tax.com", "extracted_phone": "+6591234567", "timestamp": "2026-03-02T10:00:00Z"},
+    {"id": 2, "redacted_text": "IRAS Alert: Tax return failed. Contact us at [REDACTED_PHONE].", "tactic": "urgency + authority", "extracted_domain": "fake-iras-tax.com", "extracted_phone": "+6591234567", "timestamp": "2026-03-02T11:00:00Z"},
+    {"id": 3, "redacted_text": "Failed tax return. Call immediately.", "tactic": "urgency", "extracted_domain": "", "extracted_phone": "+6591234567", "timestamp": "2026-03-02T12:00:00Z"},
+    {"id": 4, "redacted_text": "Govt tax penalty notice. Pay via link.", "tactic": "fear + authority", "extracted_domain": "fake-iras-tax.com", "extracted_phone": "", "timestamp": "2026-03-02T13:00:00Z"},
+    {"id": 5, "redacted_text": "Tax return error. Please resolve urgently.", "tactic": "urgency", "extracted_domain": "fake-iras-tax.com", "extracted_phone": "", "timestamp": "2026-03-02T14:00:00Z"}
+]
+
+@app.get("/clusters")
+async def get_clusters():
+    # Run the TF-IDF clustering logic
+    clusters = detect_campaigns(MOCK_REPORTS_DB)
+    return {"clusters": clusters}
+
 @app.get("/clusters/{cluster_id}/authority-packet")
 async def get_authority_packet(cluster_id: int):
-    return {"cluster_id": cluster_id, "packet": "download_link_placeholder"}
-
-
+    clusters = detect_campaigns(MOCK_REPORTS_DB)
+    
+    # Find the specific cluster
+    for cluster in clusters:
+        if cluster["cluster_id"] == cluster_id:
+            packet = generate_authority_packet(cluster)
+            return packet
+            
+    return {"error": "Cluster not found"}
 
 if __name__ == "__main__":
     import uvicorn
