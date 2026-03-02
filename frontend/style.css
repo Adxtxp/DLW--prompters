@@ -343,30 +343,70 @@ textarea {
 }
 
 .community-alert-banner {
-    background: #fee2e2;
-    border: 3px solid #ef4444;
     border-radius: var(--radius);
-    padding: 1.25rem;
+    padding: 1rem 1.25rem;
     margin-bottom: 2rem;
-    color: #991b1b;
     font-weight: 700;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     line-height: 1.6;
+    border-left: 6px solid;
+}
+
+.community-alert-banner .alert-sub {
+    font-weight: 400;
+    font-size: 0.88rem;
+    display: block;
+    margin-top: 2px;
+}
+
+.community-alert-banner .alert-link {
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+/* Level 1 — First report (Green) */
+.community-alert-banner.alert-level-1 {
+    background: #f0fdf4;
+    border-color: #22c55e;
+    color: #14532d;
+}
+.community-alert-banner.alert-level-1 .alert-link { color: #14532d; }
+
+/* Level 2 — Emerging pattern (Yellow) */
+.community-alert-banner.alert-level-2 {
+    background: #fefce8;
+    border-color: #eab308;
+    color: #713f12;
+}
+.community-alert-banner.alert-level-2 .alert-link { color: #713f12; }
+
+/* Level 3 — Emerging pattern stronger (Yellow-Orange) */
+.community-alert-banner.alert-level-3 {
+    background: #fff7ed;
+    border-color: #f97316;
+    color: #7c2d12;
+}
+.community-alert-banner.alert-level-3 .alert-link { color: #7c2d12; }
+
+/* Level 4 — Serious threat (Orange-Red) */
+.community-alert-banner.alert-level-4 {
+    background: #fff1f2;
+    border-color: #ef4444;
+    color: #881337;
     animation: alertPulse 2s ease-in-out infinite;
 }
+.community-alert-banner.alert-level-4 .alert-link { color: #881337; }
 
-.community-alert-banner.campaign-outbreak {
+/* Level 5 — Campaign confirmed (Deep Red) */
+.community-alert-banner.alert-level-5 {
     background: linear-gradient(135deg, #7f1d1d, #991b1b);
     border-color: #fca5a5;
-    font-size: 0.95rem;
-    animation: pulse 1.5s ease-in-out infinite;
+    color: #fff;
+    animation: alertPulse 1.2s ease-in-out infinite;
 }
+.community-alert-banner.alert-level-5 .alert-sub { color: #fecaca; }
+.community-alert-banner.alert-level-5 .alert-link { color: #fff; }
 
-.community-alert-banner #similarCount {
-    color: #dc2626;
-    font-size: 1.2rem;
-    font-weight: 800;
-}
 
 @keyframes alertPulse {
     0%, 100% {

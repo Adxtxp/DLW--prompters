@@ -279,15 +279,17 @@ async function callAnalyzeAPI(messageData) {
                     c.reports.some(r => r.tactic === analyzedTactic)
                 );
                 if (matchingCluster) {
-                    similarCount = matchingCluster.report_count;
+                    // existing reports in cluster + 1 (this current analysis)
+                    similarCount = matchingCluster.report_count + 1;
                 } else {
-                    // Fallback: count only REAL submitted localStorage reports (not seed data)
+                    // Fallback: count only REAL submitted localStorage reports (not seed data) + 1
                     const submitted = getSubmittedReports();
                     const tacticWords = analyzedTactic.split(' + ');
-                    similarCount = submitted.filter(r => {
+                    const existingCount = submitted.filter(r => {
                         const rt = (r.tactics || []).join(' ').toLowerCase();
                         return tacticWords.some(tw => rt.includes(tw));
                     }).length;
+                    similarCount = existingCount + 1;
                 }
             }
         } catch (_) { /* clusters check is optional */ }
@@ -334,13 +336,14 @@ async function callAnalyzeAPI(messageData) {
                 
                 const simpleModeNote = messageData.simpleMode ? "(Simple mode active - explanation simplified for accessibility)" : "";
                 
-                // Count REAL submitted reports with matching tactics — excludes seed data, no random numbers
+                // Count REAL submitted reports with matching tactics + 1 (this analysis)
                 const submitted = getSubmittedReports();
                 const analyzedTactics = analysis.tactics.map(t => t.toLowerCase());
-                const similarCount = submitted.filter(r => {
+                const existingCount = submitted.filter(r => {
                     const reportTactics = (r.tactics || []).map(t => t.toLowerCase());
                     return analyzedTactics.some(t => t !== 'none' && reportTactics.includes(t));
                 }).length;
+                const similarCount = existingCount + 1;
                 
                 resolve({
                     risk_score: analysis.risk_score,
