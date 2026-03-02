@@ -1,0 +1,3 @@
+WARNING from CID: We have detected unauthorized transactions on your account. 
+To prevent asset seizure by the Police, authenticate your credentials within 30 minutes at https://spf-secure-portal.com/auth. 
+Reference hotline: +65 8472 9182.
