@@ -51,12 +51,16 @@ async function callAnalyzeAPI(messageData) {
     // For now, return mock data
     return new Promise((resolve) => {
         setTimeout(() => {
+            const intervention = messageData.simpleMode 
+                ? "This message is trying to scare you into acting quickly. Take your time. Call your bank directly using the number on your card, not the one in this message."
+                : "Stop. Do not click any links. Government agencies do not demand payment via SMS. Verify through official hotline.";
+            
             resolve({
                 risk_score: 88,
                 risk_level: "High",
                 tactics: ["Authority", "Urgency"],
                 signals: ["Requests immediate action", "Suspicious link", "Claims to be from government"],
-                intervention: "Stop. Do not click any links. Government agencies do not demand payment via SMS. Verify through official hotline.",
+                intervention: intervention,
                 technical: "No SPF/DKIM detected. Suspicious domain pattern."
             });
         }, 1500);

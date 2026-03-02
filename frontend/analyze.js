@@ -24,6 +24,7 @@ async function handleAnalyzeSubmit(event) {
     const message = document.getElementById('messageInput').value;
     const type = document.getElementById('messageType').value;
     const sender = document.getElementById('senderInfo').value;
+    const simpleMode = document.getElementById('simpleMode').checked;
     
     // Hide previous results/errors
     resultsSection.style.display = 'none';
@@ -36,7 +37,7 @@ async function handleAnalyzeSubmit(event) {
     
     try {
         // Call API (mock for now)
-        const result = await callAnalyzeAPI({ message, type, sender });
+        const result = await callAnalyzeAPI({ message, type, sender, simpleMode });
         
         // Populate results
         displayAnalysisResults(result);
@@ -125,4 +126,13 @@ function resetForm() {
 function saveReport() {
     // TODO: Implement save to backend
     alert('Report saved successfully! (Backend integration pending)');
+}
+
+function submitToCommunity() {
+    if (confirm('Submit this report to the community database for threat detection?')) {
+        // TODO: Call backend API to submit report
+        alert('Report submitted to community! This will help detect scam campaigns. (Backend integration pending)');
+        // Optionally redirect to reports or dashboard
+        // window.location.href = 'dashboard.html';
+    }
 }

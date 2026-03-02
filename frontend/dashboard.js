@@ -16,6 +16,11 @@ const MOCK_DASHBOARD_DATA = {
             name: "Fake Government Fine SMS",
             report_count: 12,
             risk_level: "High",
+            common_tactic: "Authority + Fear",
+            indicators: {
+                domains: ["gov-sg-fines.com", "sgfine-pay.net"],
+                phone_numbers: ["+65-9123-XXXX", "+65-8234-XXXX"]
+            },
             first_seen: "2026-03-01T14:30:00",
             last_seen: "2026-03-02T09:15:00",
             description: "SMS claiming unpaid government fines with payment link"
@@ -25,6 +30,11 @@ const MOCK_DASHBOARD_DATA = {
             name: "Bank Account Verification",
             report_count: 8,
             risk_level: "High",
+            common_tactic: "Urgency + Authority",
+            indicators: {
+                domains: ["dbs-verify.com", "ocbc-secure-login.net"],
+                phone_numbers: []
+            },
             first_seen: "2026-02-28T10:00:00",
             last_seen: "2026-03-02T08:30:00",
             description: "Phishing emails requesting account verification"
@@ -34,6 +44,11 @@ const MOCK_DASHBOARD_DATA = {
             name: "Package Delivery Scam",
             report_count: 3,
             risk_level: "Medium",
+            common_tactic: "Urgency",
+            indicators: {
+                domains: ["track-parcel-sg.com"],
+                phone_numbers: ["+65-9876-YYYY"]
+            },
             first_seen: "2026-03-01T16:45:00",
             last_seen: "2026-03-01T20:10:00",
             description: "Fake delivery notifications with tracking links"
@@ -157,9 +172,34 @@ function populateCampaigns(campaigns) {
             </div>
             <div class="campaign-details">
                 <p><strong>Reports:</strong> ${campaign.report_count}</p>
+                <p><strong>Common Tactic:</strong> ${campaign.common_tactic}</p>
                 <p><strong>First Seen:</strong> ${formatDate(campaign.first_seen)}</p>
                 <p><strong>Last Seen:</strong> ${formatDate(campaign.last_seen)}</p>
                 <p class="campaign-description">${campaign.description}</p>
+                
+                <div class="campaign-indicators">
+                    <strong>Indicators:</strong>
+                    ${campaign.indicators.domains.length > 0 ? `
+                        <div class="indicator-group">
+                            <span class="indicator-label">🌐 Domains:</span>
+                            ${campaign.indicators.domains.map(d => `<span class="indicator-tag">${d}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                    ${campaign.indicators.phone_numbers.length > 0 ? `
+                        <div class="indicator-group">
+                            <span class="indicator-label">📱 Phone:</span>
+                            ${campaign.indicators.phone_numbers.map(p => `<span class="indicator-tag">${p}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="campaign-actions">
+                <button class="btn btn-primary btn-sm" onclick="generateAdvisory(${campaign.id})">
+                    📢 Generate Advisory
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="downloadPacket(${campaign.id})">
+                    📥 Download Authority Packet
+                </button>
             </div>
         `;
         
@@ -236,4 +276,14 @@ function updateLastUpdated() {
 
 function refreshDashboard() {
     loadDashboard();
+}
+
+function generateAdvisory(campaignId) {
+    // TODO: Call backend API to generate advisory
+    alert(`Generating community advisory for campaign #${campaignId}...\n\nThis will create a public alert with actionable guidance for community members. (Backend integration pending)`);
+}
+
+function downloadPacket(campaignId) {
+    // TODO: Call backend API to download authority packet
+    alert(`Preparing authority packet for campaign #${campaignId}...\n\nThis package includes:\n• Clustered evidence\n• Technical indicators\n• Timeline of reports\n• Recommended actions\n\n(Backend integration pending)`);
 }

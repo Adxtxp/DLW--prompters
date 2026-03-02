@@ -61,11 +61,22 @@
                         </div>
                     </div>
 
+                    <div class="form-options">
+                        <div class="accessibility-toggle">
+                            <input type="checkbox" id="simpleMode" name="simpleMode">
+                            <label for="simpleMode">📖 Explain like I'm 70</label>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary" id="analyzeBtn">
                         <span id="btnText">🔍 Analyze Message</span>
                         <span id="btnLoader" class="loader" style="display: none;"></span>
                     </button>
                 </form>
+                
+                <div class="privacy-notice">
+                    🔒 <strong>Privacy Protected:</strong> PII automatically redacted before storage.
+                </div>
             </div>
 
             <!-- Results Section -->
@@ -109,6 +120,7 @@
                     </div>
 
                     <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="submitToCommunity()">Submit to Community</button>
                         <button class="btn btn-secondary" onclick="resetForm()">Analyze Another</button>
                         <button class="btn btn-outline" onclick="saveReport()">Save Report</button>
                     </div>

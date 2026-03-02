@@ -286,6 +286,42 @@ textarea {
     font-family: inherit;
 }
 
+.form-options {
+    margin-bottom: 1.5rem;
+}
+
+.accessibility-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--light-bg);
+    border-radius: var(--radius);
+    border: 2px solid var(--border-color);
+}
+
+.accessibility-toggle input[type="checkbox"] {
+    width: auto;
+    cursor: pointer;
+}
+
+.accessibility-toggle label {
+    margin-bottom: 0;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+.privacy-notice {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #e8f5e9;
+    border-left: 4px solid var(--success-color);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    color: var(--dark-text);
+}
+
 /* ===========================
    Results Section
    =========================== */
@@ -692,6 +728,46 @@ textarea {
     color: var(--secondary-color);
     font-style: italic;
     margin-top: 1rem;
+}
+
+.campaign-indicators {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+}
+
+.indicator-group {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.indicator-label {
+    font-weight: 600;
+    color: var(--dark-text);
+    font-size: 0.9rem;
+}
+
+.indicator-tag {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-family: 'Courier New', monospace;
+}
+
+.campaign-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--border-color);
+    flex-wrap: wrap;
 }
 
 .tactics-chart {
