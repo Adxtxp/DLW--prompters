@@ -75,6 +75,17 @@ function displayAnalysisResults(result) {
         riskHeader.appendChild(indicator);
     }
     
+    // Show AI Community Alert if similar reports detected
+    const communityAlertBanner = document.getElementById('communityAlertBanner');
+    const similarCount = document.getElementById('similarCount');
+    
+    if (result.similar_reports_count && result.similar_reports_count > 0) {
+        similarCount.textContent = result.similar_reports_count;
+        communityAlertBanner.style.display = 'block';
+    } else {
+        communityAlertBanner.style.display = 'none';
+    }
+    
     // Update score value
     const scoreValue = document.getElementById('scoreValue');
     scoreValue.textContent = `${result.risk_score}/100`;

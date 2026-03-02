@@ -65,6 +65,7 @@ async function callAnalyzeAPI(messageData) {
                 intervention: intervention,
                 simple_mode: messageData.simpleMode,
                 simple_mode_note: simpleModeNote,
+                similar_reports_count: 12,
                 technical: "No SPF/DKIM detected. Suspicious domain pattern."
             });
         }, 1500);
