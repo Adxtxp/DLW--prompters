@@ -52,14 +52,30 @@ async def analyze_data(request: AnalysisRequest):
         "reasons": analysis_results["reasons"],
         "intervention_text": analysis_results["intervention_text"]
     }
+class ScamReport(BaseModel):
+    redacted_text: str
+    tactic: str
+    extracted_domain: Optional[str] = ""
+    extracted_phone: Optional[str] = ""
+    timestamp: str
+
+# This is your live, in-memory database for the hackathon
+LIVE_REPORTS_DB = []
 
 @app.post("/report")
-async def generate_report():
-    return {"status": "report generated"}
+async def generate_report(report: ScamReport):
+    # Convert to dictionary and assign an ID
+    new_report = report.dict()
+    new_report["id"] = len(LIVE_REPORTS_DB) + 1
+    
+    # Securely store ONLY the redacted/analyzed data
+    LIVE_REPORTS_DB.append(new_report)
+    
+    return {"status": "success", "message": "Report saved securely.", "report_id": new_report["id"]}
 
 @app.get("/reports")
 async def get_all_reports():
-    return {"reports": []}
+    return {"reports": LIVE_REPORTS_DB}
 
 
 
@@ -69,32 +85,24 @@ async def post_advisory(cluster_id: int, advisory: ClusterAdvisory):
 
 
 
-# Mock DB for testing Phase 2.4/2.5
-MOCK_REPORTS_DB = [
-    {"id": 1, "redacted_text": "URGENT: Your IRAS tax return failed. Call [REDACTED_PHONE].", "tactic": "urgency + authority", "extracted_domain": "fake-iras-tax.com", "extracted_phone": "+6591234567", "timestamp": "2026-03-02T10:00:00Z"},
-    {"id": 2, "redacted_text": "IRAS Alert: Tax return failed. Contact us at [REDACTED_PHONE].", "tactic": "urgency + authority", "extracted_domain": "fake-iras-tax.com", "extracted_phone": "+6591234567", "timestamp": "2026-03-02T11:00:00Z"},
-    {"id": 3, "redacted_text": "Failed tax return. Call immediately.", "tactic": "urgency", "extracted_domain": "", "extracted_phone": "+6591234567", "timestamp": "2026-03-02T12:00:00Z"},
-    {"id": 4, "redacted_text": "Govt tax penalty notice. Pay via link.", "tactic": "fear + authority", "extracted_domain": "fake-iras-tax.com", "extracted_phone": "", "timestamp": "2026-03-02T13:00:00Z"},
-    {"id": 5, "redacted_text": "Tax return error. Please resolve urgently.", "tactic": "urgency", "extracted_domain": "fake-iras-tax.com", "extracted_phone": "", "timestamp": "2026-03-02T14:00:00Z"}
-]
-
 @app.get("/clusters")
 async def get_clusters():
-    # Run the TF-IDF clustering logic
-    clusters = detect_campaigns(MOCK_REPORTS_DB)
+    # Run the TF-IDF clustering logic on the LIVE data
+    clusters = detect_campaigns(LIVE_REPORTS_DB)
     return {"clusters": clusters}
 
 @app.get("/clusters/{cluster_id}/authority-packet")
 async def get_authority_packet(cluster_id: int):
-    clusters = detect_campaigns(MOCK_REPORTS_DB)
+    clusters = detect_campaigns(LIVE_REPORTS_DB)
     
-    # Find the specific cluster
     for cluster in clusters:
         if cluster["cluster_id"] == cluster_id:
-            packet = generate_authority_packet(cluster)
-            return packet
+            return generate_authority_packet(cluster)
             
     return {"error": "Cluster not found"}
+
+
+
 
 if __name__ == "__main__":
     import uvicorn
