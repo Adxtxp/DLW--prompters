@@ -2,6 +2,9 @@
    Analyze Page Logic
    =========================== */
 
+// Store current analysis data for saving
+let currentAnalysisData = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('analyzeForm');
     
@@ -38,6 +41,22 @@ async function handleAnalyzeSubmit(event) {
     try {
         // Call API (mock for now)
         const result = await callAnalyzeAPI({ message, type, sender, simpleMode });
+        
+        // Store the analysis data for saving later
+        currentAnalysisData = {
+            message: message,
+            message_type: type,
+            sender: sender,
+            simple_mode: simpleMode,
+            risk_score: result.risk_score,
+            risk_level: result.risk_level,
+            tactics: result.tactics,
+            signals: result.signals,
+            intervention: result.intervention,
+            similar_reports_count: result.similar_reports_count,
+            technical: result.technical,
+            timestamp: new Date().toISOString()
+        };
         
         // Populate results
         displayAnalysisResults(result);
@@ -144,12 +163,57 @@ function resetForm() {
     document.getElementById('analyzeForm').reset();
     document.getElementById('resultsSection').style.display = 'none';
     document.getElementById('errorSection').style.display = 'none';
+    currentAnalysisData = null; // Clear stored data
+    
+    // Reset save button if it exists
+    const saveBtn = document.querySelector('[onclick="saveReport()"]');
+    if (saveBtn) {
+        saveBtn.textContent = 'Save Report';
+        saveBtn.disabled = false;
+        saveBtn.classList.remove('btn-success');
+        saveBtn.classList.add('btn-outline');
+    }
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function saveReport() {
-    // TODO: Implement save to backend
-    alert('Report saved successfully! (Backend integration pending)');
+async function saveReport() {
+    // Check if there's data to save
+    if (!currentAnalysisData) {
+        alert('Please analyze a message first before saving.');
+        return;
+    }
+    
+    // Get the save button
+    const saveBtn = event?.target || document.querySelector('[onclick="saveReport()"]');
+    if (!saveBtn) return;
+    
+    // Disable button and show loading state
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Saving...';
+    saveBtn.disabled = true;
+    
+    try {
+        // Call the save API
+        const response = await callSaveReportAPI(currentAnalysisData);
+        
+        // Success! Update button
+        saveBtn.textContent = '✅ Saved to Community';
+        saveBtn.classList.remove('btn-outline');
+        saveBtn.classList.add('btn-success');
+        
+        // Show success message
+        alert(`✅ Success!\n\nYour report has been saved to the community database.\nReport ID: ${response.report_id}\n\nThis helps protect others from similar scams.`);
+        
+    } catch (error) {
+        // Error handling
+        console.error('Failed to save report:', error);
+        alert('❌ Failed to save report. Please try again.');
+        
+        // Reset button on error
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    }
 }
 
 function submitToCommunity() {
