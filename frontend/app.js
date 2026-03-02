@@ -267,37 +267,10 @@ async function callAnalyzeAPI(messageData) {
         
         const simpleModeNote = messageData.simpleMode ? "(Simple mode active - explanation simplified for accessibility)" : "";
         
-        // Count similar reports directly from backend /reports (most reliable)
-        // +1 accounts for the current message being analyzed right now
-        let similarCount = 1;
-        try {
-            const reportsRes = await fetch(`${API_BASE_URL}/reports`);
-            if (reportsRes.ok) {
-                const reportsData = await reportsRes.json();
-                const allReports = reportsData.reports || [];
-                const analyzedTactic = backendResult.tactic; // e.g. "urgency + authority"
-                const tacticWords = analyzedTactic.toLowerCase().split(' + ').filter(Boolean);
-                
-                // Count backend reports whose tactic overlaps with the current analysis
-                const matchingCount = allReports.filter(r => {
-                    const rt = (r.tactic || '').toLowerCase();
-                    return tacticWords.some(tw => tw.length > 2 && rt.includes(tw));
-                }).length;
-                
-                // existing matching reports + 1 (this current analysis)
-                similarCount = matchingCount + 1;
-            } else {
-                // Backend /reports failed, fall back to localStorage
-                const submitted = getSubmittedReports();
-                const analyzedTactic = backendResult.tactic;
-                const tacticWords = analyzedTactic.toLowerCase().split(' + ').filter(Boolean);
-                const localCount = submitted.filter(r => {
-                    const rt = (r.tactics || []).join(' ').toLowerCase();
-                    return tacticWords.some(tw => tw.length > 2 && rt.includes(tw));
-                }).length;
-                similarCount = localCount + 1;
-            }
-        } catch (_) { /* keep similarCount = 1 */ }
+        // Use cluster_info.report_count from the backend — the authoritative similar-report count.
+        // +1 = existing similar reports already submitted + this current analysis.
+        const clusterInfo = backendResult.cluster_info || { report_count: 0, campaign_detected: false };
+        const similarCount = clusterInfo.report_count + 1;
         
         return {
             risk_score: riskScore,
