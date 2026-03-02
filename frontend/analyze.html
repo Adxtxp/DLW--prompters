@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyze Message - Sentinel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">🛡️ Sentinel</h1>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="analyze.html" class="active">Analyze</a></li>
+                <li><a href="reports.html">Reports</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Analyze Suspicious Message</h1>
+            <p>Paste the message content below to check for phishing tactics</p>
+        </div>
+
+        <div class="analyze-section">
+            <div class="input-card">
+                <form id="analyzeForm">
+                    <div class="form-group">
+                        <label for="messageInput">Message Content</label>
+                        <textarea 
+                            id="messageInput" 
+                            name="message" 
+                            rows="8" 
+                            placeholder="Example: URGENT! Your account has been suspended. Click here within 30 minutes to verify your identity or face permanent closure."
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="messageType">Message Type</label>
+                            <select id="messageType" name="type">
+                                <option value="sms">SMS</option>
+                                <option value="email">Email</option>
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="senderInfo">Sender (Optional)</label>
+                            <input 
+                                type="text" 
+                                id="senderInfo" 
+                                name="sender" 
+                                placeholder="Phone number or email"
+                            >
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="analyzeBtn">
+                        <span id="btnText">🔍 Analyze Message</span>
+                        <span id="btnLoader" class="loader" style="display: none;"></span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section" style="display: none;">
+                <div class="results-card">
+                    <div class="risk-header">
+                        <h2>Analysis Results</h2>
+                        <div id="riskBadge" class="risk-badge"></div>
+                    </div>
+
+                    <div class="result-content">
+                        <div class="result-item">
+                            <h3>🎯 Risk Score</h3>
+                            <div class="risk-score-display">
+                                <div class="score-bar">
+                                    <div id="scoreBar" class="score-fill"></div>
+                                </div>
+                                <span id="scoreValue" class="score-value"></span>
+                            </div>
+                        </div>
+
+                        <div class="result-item">
+                            <h3>🧠 Psychological Tactics Detected</h3>
+                            <div id="tacticsContainer" class="tactics-list"></div>
+                        </div>
+
+                        <div class="result-item">
+                            <h3>⚠️ Warning Signals</h3>
+                            <div id="signalsContainer" class="signals-list"></div>
+                        </div>
+
+                        <div class="result-item intervention-box">
+                            <h3>💡 Recommended Action</h3>
+                            <div id="interventionText" class="intervention-content"></div>
+                        </div>
+
+                        <div class="result-item">
+                            <h3>📊 Technical Analysis</h3>
+                            <div id="technicalDetails" class="technical-info"></div>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="resetForm()">Analyze Another</button>
+                        <button class="btn btn-outline" onclick="saveReport()">Save Report</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Section -->
+            <div id="errorSection" class="error-section" style="display: none;">
+                <div class="error-card">
+                    <h3>⚠️ Analysis Error</h3>
+                    <p id="errorMessage"></p>
+                    <button class="btn btn-secondary" onclick="resetForm()">Try Again</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Sentinel Project</p>
+    </footer>
+
+    <script src="app.js"></script>
+    <script src="analyze.js"></script>
+</body>
+</html>

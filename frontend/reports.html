@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Sentinel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">🛡️ Sentinel</h1>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="analyze.html">Analyze</a></li>
+                <li><a href="reports.html" class="active">Reports</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Phishing Reports</h1>
+            <p>View all submitted reports and their analysis results</p>
+        </div>
+
+        <div class="reports-controls">
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="🔍 Search reports..." 
+                    onkeyup="filterReports()"
+                >
+            </div>
+            
+            <div class="filter-group">
+                <label>Filter by Risk:</label>
+                <select id="riskFilter" onchange="filterReports()">
+                    <option value="all">All Levels</option>
+                    <option value="high">High Risk</option>
+                    <option value="medium">Medium Risk</option>
+                    <option value="low">Low Risk</option>
+                </select>
+            </div>
+
+            <button class="btn btn-secondary" onclick="refreshReports()">
+                <span id="refreshIcon">🔄</span> Refresh
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingReports" class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading reports...</p>
+        </div>
+
+        <!-- Reports List -->
+        <div id="reportsList" class="reports-list" style="display: none;">
+            <div class="reports-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalReports">0</div>
+                    <div class="stat-label">Total Reports</div>
+                </div>
+                <div class="stat-card stat-high">
+                    <div class="stat-value" id="highRiskCount">0</div>
+                    <div class="stat-label">High Risk</div>
+                </div>
+                <div class="stat-card stat-medium">
+                    <div class="stat-value" id="mediumRiskCount">0</div>
+                    <div class="stat-label">Medium Risk</div>
+                </div>
+                <div class="stat-card stat-low">
+                    <div class="stat-value" id="lowRiskCount">0</div>
+                    <div class="stat-label">Low Risk</div>
+                </div>
+            </div>
+
+            <div id="reportsContainer" class="reports-container">
+                <!-- Reports will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-icon">📭</div>
+            <h3>No Reports Yet</h3>
+            <p>Start by analyzing a suspicious message</p>
+            <a href="analyze.html" class="btn btn-primary">Analyze Message</a>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="error-section" style="display: none;">
+            <div class="error-card">
+                <h3>⚠️ Failed to Load Reports</h3>
+                <p id="reportsError"></p>
+                <button class="btn btn-secondary" onclick="refreshReports()">Retry</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Sentinel Project</p>
+    </footer>
+
+    <script src="app.js"></script>
+    <script src="reports.js"></script>
+</body>
+</html>
