@@ -3,7 +3,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 
-from logic import get_data_and_cluster, redact_text
+
+from logic import get_data_and_cluster, redact_text, detect_tactics_and_score
 
 
 
@@ -35,13 +36,20 @@ async def root():
 
 @app.post("/analyze")
 async def analyze_data(request: AnalysisRequest):
-    # Pass the incoming text through your new Phase 2.1 function
+    # 1. Redact the text (Phase 2.1)
     safe_text = redact_text(request.text)
     
+    # 2. Detect tactics and calculate score (Phase 2.2 & 2.3)
+    # Note: We analyze the ORIGINAL text to catch keywords before they get masked out
+    analysis_results = detect_tactics_and_score(request.text)
+    
+    # 3. Combine and return the payload matching your rubric
     return {
-        "status": "success", 
-        "original_length": len(request.text),
-        "redacted_text": safe_text
+        "redacted_text": safe_text,
+        "tactic": analysis_results["tactic"],
+        "risk_score": analysis_results["risk_score"],
+        "reasons": analysis_results["reasons"],
+        "intervention_text": analysis_results["intervention_text"]
     }
 
 @app.post("/report")
@@ -70,16 +78,7 @@ async def post_advisory(cluster_id: int, advisory: ClusterAdvisory):
 async def get_authority_packet(cluster_id: int):
     return {"cluster_id": cluster_id, "packet": "download_link_placeholder"}
 
-@app.post("/analyze")
-async def analyze_data(request: AnalysisRequest):
-    # Pass the incoming text through your new Phase 2.1 function
-    safe_text = redact_text(request.text)
-    
-    return {
-        "status": "success", 
-        "original_length": len(request.text),
-        "redacted_text": safe_text
-    }
+
 
 if __name__ == "__main__":
     import uvicorn
