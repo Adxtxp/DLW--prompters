@@ -63,6 +63,18 @@ function displayAnalysisResults(result) {
     riskBadge.textContent = `${result.risk_level} Risk`;
     riskBadge.className = `risk-badge ${getRiskBadgeClass(result.risk_level)}`;
     
+    // Show simple mode indicator if active
+    const riskHeader = document.querySelector('.risk-header');
+    const existingIndicator = riskHeader.querySelector('.simple-mode-indicator');
+    if (existingIndicator) existingIndicator.remove();
+    
+    if (result.simple_mode) {
+        const indicator = document.createElement('div');
+        indicator.className = 'simple-mode-indicator';
+        indicator.innerHTML = '📖 Simple Explanation Mode Active';
+        riskHeader.appendChild(indicator);
+    }
+    
     // Update score value
     const scoreValue = document.getElementById('scoreValue');
     scoreValue.textContent = `${result.risk_score}/100`;
@@ -109,7 +121,8 @@ function displayAnalysisResults(result) {
     
     // Update intervention text
     const interventionText = document.getElementById('interventionText');
-    interventionText.innerHTML = `<p><strong>${result.intervention}</strong></p>`;
+    const formattedIntervention = result.intervention.replace(/\n/g, '<br>');
+    interventionText.innerHTML = `${formattedIntervention}${result.simple_mode_note ? `<p class="mode-note">${result.simple_mode_note}</p>` : ''}`;
     
     // Update technical details
     const technicalDetails = document.getElementById('technicalDetails');
