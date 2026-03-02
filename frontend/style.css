@@ -342,6 +342,34 @@ textarea {
     border-bottom: 2px solid var(--border-color);
 }
 
+.community-alert-banner {
+    background: #fee2e2;
+    border: 3px solid #ef4444;
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+    color: #991b1b;
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    animation: alertPulse 2s ease-in-out infinite;
+}
+
+.community-alert-banner #similarCount {
+    color: #dc2626;
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+@keyframes alertPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    }
+}
+
 .risk-badge {
     padding: 0.5rem 1rem;
     border-radius: 20px;
