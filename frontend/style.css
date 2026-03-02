@@ -355,6 +355,13 @@ textarea {
     animation: alertPulse 2s ease-in-out infinite;
 }
 
+.community-alert-banner.campaign-outbreak {
+    background: linear-gradient(135deg, #7f1d1d, #991b1b);
+    border-color: #fca5a5;
+    font-size: 0.95rem;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
 .community-alert-banner #similarCount {
     color: #dc2626;
     font-size: 1.2rem;
@@ -1132,5 +1139,404 @@ footer {
 
     .chart-bar {
         grid-template-columns: 80px 1fr;
+    }
+}
+
+/* ===========================
+   Agentic Pipeline Visualization
+   =========================== */
+
+.agent-pipeline {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    color: #e2e8f0;
+}
+
+.pipeline-title {
+    color: #38bdf8;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.pipeline-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.pipeline-step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.4s ease;
+}
+
+.pipeline-step.step-active {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: #38bdf8;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    animation: agentPulse 1s ease-in-out infinite;
+}
+
+.pipeline-step.step-done {
+    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.4);
+}
+
+@keyframes agentPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(56, 189, 248, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); }
+}
+
+.step-icon {
+    font-size: 1.5rem;
+    min-width: 2rem;
+    text-align: center;
+}
+
+.step-info {
+    flex: 1;
+}
+
+.step-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #f1f5f9;
+}
+
+.step-desc {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.step-status {
+    font-size: 1.2rem;
+    min-width: 2rem;
+    text-align: center;
+}
+
+.pipeline-connector {
+    width: 2px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    margin-left: 2rem;
+}
+
+/* ===========================
+   Authority Packet Modal
+   =========================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.authority-packet-modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 2px solid var(--danger-color);
+    background: linear-gradient(135deg, #fef2f2, #fff);
+}
+
+.modal-header h2 {
+    font-size: 1.15rem;
+    color: var(--dark-text);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--secondary-color);
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.modal-close:hover {
+    background: var(--light-bg);
+    color: var(--danger-color);
+}
+
+.packet-body {
+    padding: 1.5rem;
+}
+
+.packet-section {
+    margin-bottom: 1.5rem;
+}
+
+.packet-section h4 {
+    margin-bottom: 0.75rem;
+    color: var(--dark-text);
+    font-size: 1rem;
+}
+
+.evidence-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.evidence-table td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.evidence-table tr:last-child td {
+    border-bottom: none;
+}
+
+.evidence-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.evidence-block {
+    background: var(--light-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.evidence-block h5 {
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    color: var(--secondary-color);
+}
+
+.evidence-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.packet-recommendation {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 1rem;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--light-bg);
+    border-radius: 0 0 12px 12px;
+}
+
+/* ===========================
+   Related Cases / Patterns Grid
+   =========================== */
+
+.patterns-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.pattern-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.pattern-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.pattern-card.pattern-campaign {
+    border-color: var(--danger-color);
+    border-width: 2px;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+}
+
+.pattern-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.pattern-id {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.05rem;
+}
+
+.pattern-count {
+    background: var(--light-bg);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: var(--secondary-color);
+    font-weight: 500;
+}
+
+.pattern-alert {
+    background: var(--danger-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    animation: pulse 2s infinite;
+}
+
+.pattern-tactic {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    margin-bottom: 0.75rem;
+}
+
+.evidence-mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+}
+
+.evidence-mini-table thead th {
+    background: var(--light-bg);
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--secondary-color);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.evidence-mini-table td {
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.evidence-value {
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+    color: var(--dark-text);
+    word-break: break-all;
+}
+
+.btn-copy {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    transition: var(--transition);
+}
+
+.btn-copy:hover {
+    background: var(--light-bg);
+    border-color: var(--primary-color);
+}
+
+.pattern-snippets {
+    margin-top: 0.5rem;
+}
+
+.snippet-preview {
+    font-size: 0.78rem;
+    color: var(--secondary-color);
+    font-style: italic;
+    padding: 0.25rem 0;
+    border-bottom: 1px dashed var(--border-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.snippet-more {
+    font-size: 0.75rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.text-sm {
+    font-size: 0.8rem;
+}
+
+/* ===========================
+   Cluster Badge (non-campaign)
+   =========================== */
+
+.cluster-badge {
+    font-size: 0.75rem;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.campaign-escalation-msg {
+    color: var(--danger-color);
+    font-weight: 600;
+    font-size: 0.88rem;
+    margin-top: 0.5rem;
+}
+
+/* ===========================
+   Responsive overrides for new components
+   =========================== */
+
+@media (max-width: 768px) {
+    .evidence-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .patterns-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .authority-packet-modal {
+        width: 95%;
+    }
+
+    .pipeline-step {
+        padding: 0.5rem 0.75rem;
     }
 }

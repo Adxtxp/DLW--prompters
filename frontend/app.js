@@ -1,7 +1,7 @@
 /* ===========================
    Global Variables & Config
    =========================== */
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'http://localhost:8000';
 
 /* ===========================
    LocalStorage Mock Database
@@ -211,100 +211,194 @@ function analyzeMessageRisk(message) {
    =========================== */
 
 async function callAnalyzeAPI(messageData) {
-    // Uncomment when backend is ready:
-    // const response = await fetch(`${API_BASE_URL}/analyze`, {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify(messageData)
-    // });
-    // return await response.json();
-    
-    // For now, return mock data
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // Dynamic risk analysis based on message content
-            const analysis = analyzeMessageRisk(messageData.message);
-            
-            // Generate intervention text based on risk level and simple mode
-            let intervention;
-            if (messageData.simpleMode) {
-                if (analysis.risk_level === 'High') {
-                    intervention = "🧓 SIMPLE EXPLANATION:\n\nThis message is VERY suspicious. Here's what to do:\n\n1. DO NOT click any links in the message\n2. DO NOT call any phone numbers in the message\n3. DO NOT send any money or personal information\n4. Delete this message\n5. If it claims to be from your bank, call the number on the BACK of your bank card\n6. If it claims to be from the government, visit the official government website directly\n\nScammers use scary words to make you panic. Take your time. You are in control.";
-                } else if (analysis.risk_level === 'Medium') {
-                    intervention = "🧓 SIMPLE EXPLANATION:\n\nThis message looks suspicious. Be careful:\n\n1. Don't click links unless you're 100% sure\n2. Check if the sender is really who they claim to be\n3. Call the organization directly using their official number\n4. Ask a family member if you're unsure";
-                } else {
-                    intervention = "🧓 SIMPLE EXPLANATION:\n\nThis message looks mostly safe, but always be careful:\n\n1. Only click links if you trust the sender\n2. Never share passwords or personal information\n3. When in doubt, ask someone you trust";
-                }
+    try {
+        const response = await fetch(`${API_BASE_URL}/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: messageData.message })
+        });
+        if (!response.ok) throw new Error('Backend returned error');
+        const backendResult = await response.json();
+        
+        // Map backend response to frontend format
+        const riskScore = backendResult.risk_score;
+        let riskLevel = 'Low';
+        if (riskScore >= 70) riskLevel = 'High';
+        else if (riskScore >= 40) riskLevel = 'Medium';
+        
+        // Parse tactics from "authority + urgency" format
+        const tactics = backendResult.tactic !== 'none'
+            ? backendResult.tactic.split(' + ').map(t => t.charAt(0).toUpperCase() + t.slice(1))
+            : ['None'];
+        
+        // Build intervention text with simple mode support
+        let intervention;
+        if (messageData.simpleMode) {
+            if (riskLevel === 'High') {
+                intervention = "🧓 SIMPLE EXPLANATION:\n\nThis message is VERY suspicious. Here's what to do:\n\n1. DO NOT click any links in the message\n2. DO NOT call any phone numbers in the message\n3. DO NOT send any money or personal information\n4. Delete this message\n5. If it claims to be from your bank, call the number on the BACK of your bank card\n6. If it claims to be from the government, visit the official government website directly\n\nScammers use scary words to make you panic. Take your time. You are in control.";
+            } else if (riskLevel === 'Medium') {
+                intervention = "🧓 SIMPLE EXPLANATION:\n\nThis message looks suspicious. Be careful:\n\n1. Don't click links unless you're 100% sure\n2. Check if the sender is really who they claim to be\n3. Call the organization directly using their official number\n4. Ask a family member if you're unsure";
             } else {
-                if (analysis.risk_level === 'High') {
-                    intervention = "⚠️ CRITICAL WARNING:\n\nStop. Do not interact with this message. This exhibits multiple social engineering attack patterns designed to exploit psychological vulnerabilities. Verify through official channels only.";
-                } else if (analysis.risk_level === 'Medium') {
-                    intervention = "⚠️ CAUTION ADVISED:\n\nThis message shows suspicious characteristics. Exercise caution. Verify sender authenticity through independent channels before taking any action.";
+                intervention = "🧓 SIMPLE EXPLANATION:\n\nThis message looks mostly safe, but always be careful:\n\n1. Only click links if you trust the sender\n2. Never share passwords or personal information\n3. When in doubt, ask someone you trust";
+            }
+        } else {
+            intervention = backendResult.intervention_text;
+        }
+        
+        const simpleModeNote = messageData.simpleMode ? "(Simple mode active - explanation simplified for accessibility)" : "";
+        
+        // Check clusters for similar reports count — match on tactic, not just biggest cluster
+        let similarCount = 0;
+        try {
+            const clustersRes = await fetch(`${API_BASE_URL}/clusters`);
+            if (clustersRes.ok) {
+                const clustersData = await clustersRes.json();
+                const analyzedTactic = backendResult.tactic; // e.g. "urgency + authority"
+                // Find the cluster whose reports share this tactic
+                const matchingCluster = clustersData.clusters.find(c =>
+                    c.reports.some(r => r.tactic === analyzedTactic)
+                );
+                if (matchingCluster) {
+                    similarCount = matchingCluster.report_count;
                 } else {
-                    intervention = "ℹ️ LOW RISK:\n\nNo major phishing indicators detected. However, always verify unexpected requests and avoid sharing sensitive information.";
+                    // Fallback: count localStorage reports with any overlapping tactic
+                    const storedReports = getMockReports();
+                    const tacticWords = analyzedTactic.split(' + ');
+                    similarCount = storedReports.filter(r => {
+                        const rt = (r.tactics || []).join(' ').toLowerCase();
+                        return tacticWords.some(tw => rt.includes(tw));
+                    }).length;
                 }
             }
-            
-            const simpleModeNote = messageData.simpleMode ? "(Simple mode active - explanation simplified for accessibility)" : "";
-            
-            // Determine similar reports count based on risk (higher risk = more reports)
-            let similarCount = 0;
-            if (analysis.risk_level === 'High') {
-                similarCount = Math.floor(Math.random() * 8) + 8; // 8-15 reports
-            } else if (analysis.risk_level === 'Medium') {
-                similarCount = Math.floor(Math.random() * 3) + 2; // 2-4 reports
-            }
-            
-            resolve({
-                risk_score: analysis.risk_score,
-                risk_level: analysis.risk_level,
-                tactics: analysis.tactics,
-                signals: analysis.signals,
-                intervention: intervention,
-                simple_mode: messageData.simpleMode,
-                simple_mode_note: simpleModeNote,
-                similar_reports_count: similarCount,
-                technical: `Message length: ${messageData.message.length} chars. Pattern analysis: ${analysis.tactics.join(', ')} detected.`
-            });
-        }, 1500);
-    });
+        } catch (_) { /* clusters check is optional */ }
+        
+        return {
+            risk_score: riskScore,
+            risk_level: riskLevel,
+            tactics: tactics,
+            signals: backendResult.reasons || [],
+            intervention: intervention,
+            simple_mode: messageData.simpleMode,
+            simple_mode_note: simpleModeNote,
+            similar_reports_count: similarCount,
+            redacted_text: backendResult.redacted_text,
+            tactic_raw: backendResult.tactic,
+            technical: `Backend analysis: Risk ${riskScore}/100. Tactics: ${backendResult.tactic}. ${backendResult.reasons.join('; ')}.`,
+            _source: 'backend'
+        };
+    } catch (err) {
+        console.warn('Backend unavailable, falling back to client-side analysis:', err.message);
+        // Fallback to client-side heuristic
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const analysis = analyzeMessageRisk(messageData.message);
+                
+                let intervention;
+                if (messageData.simpleMode) {
+                    if (analysis.risk_level === 'High') {
+                        intervention = "🧓 SIMPLE EXPLANATION:\n\nThis message is VERY suspicious. Here's what to do:\n\n1. DO NOT click any links in the message\n2. DO NOT call any phone numbers in the message\n3. DO NOT send any money or personal information\n4. Delete this message\n5. If it claims to be from your bank, call the number on the BACK of your bank card\n6. If it claims to be from the government, visit the official government website directly\n\nScammers use scary words to make you panic. Take your time. You are in control.";
+                    } else if (analysis.risk_level === 'Medium') {
+                        intervention = "🧓 SIMPLE EXPLANATION:\n\nThis message looks suspicious. Be careful:\n\n1. Don't click links unless you're 100% sure\n2. Check if the sender is really who they claim to be\n3. Call the organization directly using their official number\n4. Ask a family member if you're unsure";
+                    } else {
+                        intervention = "🧓 SIMPLE EXPLANATION:\n\nThis message looks mostly safe, but always be careful:\n\n1. Only click links if you trust the sender\n2. Never share passwords or personal information\n3. When in doubt, ask someone you trust";
+                    }
+                } else {
+                    if (analysis.risk_level === 'High') {
+                        intervention = "⚠️ CRITICAL WARNING:\n\nStop. Do not interact with this message. This exhibits multiple social engineering attack patterns designed to exploit psychological vulnerabilities. Verify through official channels only.";
+                    } else if (analysis.risk_level === 'Medium') {
+                        intervention = "⚠️ CAUTION ADVISED:\n\nThis message shows suspicious characteristics. Exercise caution. Verify sender authenticity through independent channels before taking any action.";
+                    } else {
+                        intervention = "ℹ️ LOW RISK:\n\nNo major phishing indicators detected. However, always verify unexpected requests and avoid sharing sensitive information.";
+                    }
+                }
+                
+                const simpleModeNote = messageData.simpleMode ? "(Simple mode active - explanation simplified for accessibility)" : "";
+                
+                // Count REAL localStorage reports with matching tactics — no random numbers
+                const storedReports = getMockReports();
+                const analyzedTactics = analysis.tactics.map(t => t.toLowerCase());
+                const similarCount = storedReports.filter(r => {
+                    const reportTactics = (r.tactics || []).map(t => t.toLowerCase());
+                    return analyzedTactics.some(t => t !== 'none' && reportTactics.includes(t));
+                }).length;
+                
+                resolve({
+                    risk_score: analysis.risk_score,
+                    risk_level: analysis.risk_level,
+                    tactics: analysis.tactics,
+                    signals: analysis.signals,
+                    intervention: intervention,
+                    simple_mode: messageData.simpleMode,
+                    simple_mode_note: simpleModeNote,
+                    similar_reports_count: similarCount,
+                    technical: `Client-side analysis: ${analysis.tactics.join(', ')} detected. Message length: ${messageData.message.length} chars.`,
+                    _source: 'client'
+                });
+            }, 1500);
+        });
+    }
 }
 
 async function callReportsAPI() {
-    // Uncomment when backend is ready:
-    // const response = await fetch(`${API_BASE_URL}/reports`);
-    // return await response.json();
-    
-    // For now, return empty (will use mock data)
-    return null;
+    try {
+        const response = await fetch(`${API_BASE_URL}/reports`);
+        if (!response.ok) throw new Error('Backend error');
+        return await response.json();
+    } catch (err) {
+        console.warn('Backend /reports unavailable, using localStorage:', err.message);
+        return null;
+    }
 }
 
 async function callDashboardAPI() {
-    // Uncomment when backend is ready:
-    // const response = await fetch(`${API_BASE_URL}/dashboard`);
-    // return await response.json();
-    
-    // For now, return empty (will use mock data)
-    return null;
+    try {
+        const response = await fetch(`${API_BASE_URL}/clusters`);
+        if (!response.ok) throw new Error('Backend error');
+        return await response.json();
+    } catch (err) {
+        console.warn('Backend /clusters unavailable, using localStorage:', err.message);
+        return null;
+    }
 }
 
 async function callSaveReportAPI(reportData) {
-    // Uncomment when backend is ready:
-    // const response = await fetch(`${API_BASE_URL}/reports`, {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify(reportData)
-    // });
-    // return await response.json();
-    
-    // For now, return mock success
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({
-                success: true,
-                message: 'Report saved successfully to community database',
-                report_id: Math.floor(Math.random() * 10000) + 1000
-            });
-        }, 1000);
-    });
+    try {
+        const response = await fetch(`${API_BASE_URL}/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reportData)
+        });
+        if (!response.ok) throw new Error('Backend error');
+        return await response.json();
+    } catch (err) {
+        console.warn('Backend /report unavailable, saving locally:', err.message);
+        return {
+            success: true,
+            message: 'Report saved locally (backend offline)',
+            report_id: Math.floor(Math.random() * 10000) + 1000,
+            _source: 'local'
+        };
+    }
+}
+
+async function callClustersAPI() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/clusters`);
+        if (!response.ok) throw new Error('Backend error');
+        return await response.json();
+    } catch (err) {
+        console.warn('Backend /clusters unavailable:', err.message);
+        return null;
+    }
+}
+
+async function callAuthorityPacketAPI(clusterId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/clusters/${clusterId}/authority-packet`);
+        if (!response.ok) throw new Error('Backend error');
+        return await response.json();
+    } catch (err) {
+        console.warn('Backend authority-packet unavailable:', err.message);
+        return null;
+    }
 }

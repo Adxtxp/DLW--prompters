@@ -79,6 +79,48 @@
                 </div>
             </div>
 
+            <!-- Agentic Pipeline Visualization -->
+            <div id="agentPipeline" class="agent-pipeline" style="display: none;">
+                <h3 class="pipeline-title">🤖 Agentic AI Pipeline — Live</h3>
+                <div class="pipeline-steps">
+                    <div class="pipeline-step" id="step-understand">
+                        <div class="step-icon">🧠</div>
+                        <div class="step-info">
+                            <div class="step-name">Agent 1: Understand</div>
+                            <div class="step-desc">PII redaction + tactic detection + risk scoring</div>
+                        </div>
+                        <div class="step-status" id="status-understand">⏳</div>
+                    </div>
+                    <div class="pipeline-connector"></div>
+                    <div class="pipeline-step" id="step-cognitive">
+                        <div class="step-icon">💡</div>
+                        <div class="step-info">
+                            <div class="step-name">Agent 2: Cognitive Reset</div>
+                            <div class="step-desc">Generating age-appropriate intervention text</div>
+                        </div>
+                        <div class="step-status" id="status-cognitive">⏳</div>
+                    </div>
+                    <div class="pipeline-connector"></div>
+                    <div class="pipeline-step" id="step-investigate">
+                        <div class="step-icon">🔍</div>
+                        <div class="step-info">
+                            <div class="step-name">Agent 3: Investigation</div>
+                            <div class="step-desc">TF-IDF clustering to find related scam reports</div>
+                        </div>
+                        <div class="step-status" id="status-investigate">⏳</div>
+                    </div>
+                    <div class="pipeline-connector"></div>
+                    <div class="pipeline-step" id="step-escalate">
+                        <div class="step-icon">🚨</div>
+                        <div class="step-info">
+                            <div class="step-name">Agent 4: Escalation</div>
+                            <div class="step-desc">Campaign detection trigger (≥5 reports = alert authorities)</div>
+                        </div>
+                        <div class="step-status" id="status-escalate">⏳</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Results Section -->
             <div id="resultsSection" class="results-section" style="display: none;">
                 <div class="results-card">
