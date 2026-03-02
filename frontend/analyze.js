@@ -67,14 +67,22 @@ async function handleAnalyzeSubmit(event) {
         await sleep(600);
         completeStep('investigate');
         
-        // Agent 4: Escalation (campaign check)
+        // Agent 4: Escalation (campaign check) — icon reflects severity level
         activateStep('escalate');
         await sleep(400);
-        if (result.similar_reports_count >= 5) {
+        const sc = result.similar_reports_count || 1;
+        if (sc >= 5) {
             completeStep('escalate', '🚨');
+        } else if (sc === 4) {
+            completeStep('escalate', '🔴');
+        } else if (sc >= 2) {
+            completeStep('escalate', '🟡');
         } else {
-            completeStep('escalate');
+            completeStep('escalate', '🟢');
         }
+        // Also update the escalate step description with live count
+        const stepDesc = document.querySelector('#step-escalate .step-desc');
+        if (stepDesc) stepDesc.textContent = `Report #${sc} — ${sc >= 5 ? 'Campaign confirmed, authorities notified' : sc === 4 ? 'Serious threat, 1 away from escalation' : sc >= 2 ? 'Emerging pattern detected' : 'First report, monitoring started'}`;
         
         // Store the analysis data for saving later
         currentAnalysisData = {
@@ -156,28 +164,49 @@ function displayAnalysisResults(result) {
         riskHeader.appendChild(indicator);
     }
     
-    // Show AI Community Alert if similar reports detected
+    // 5-level escalation banner — count = existing similar + 1 (this report)
     const communityAlertBanner = document.getElementById('communityAlertBanner');
-    const similarCountSpan = document.getElementById('similarCount');
-    const count = result.similar_reports_count || 0;
+    const count = result.similar_reports_count || 1;
+    
+    communityAlertBanner.style.display = 'block';
     
     if (count >= 5) {
-        // CAMPAIGN THRESHOLD HIT — escalate visually
-        communityAlertBanner.className = 'community-alert-banner campaign-outbreak';
+        // Level 5 — Campaign confirmed, authorities alerted
+        communityAlertBanner.className = 'community-alert-banner alert-level-5';
         communityAlertBanner.innerHTML = `
-            🚨 <strong>CAMPAIGN OUTBREAK DETECTED — AUTHORITIES NOTIFIED</strong><br>
-            <span style="font-size:0.9em">Our Investigation Agent has clustered <strong>${count} matching reports</strong> using TF-IDF similarity analysis. 
-            This is a <strong>confirmed coordinated attack</strong>. An authority packet has been auto-generated. 
-            <a href="dashboard.html" style="color:#fff;font-weight:bold;text-decoration:underline">View Dashboard & Download Packet →</a></span>
+            🚨 <strong>CAMPAIGN VERIFIED — ALERTING AUTHORITIES</strong><br>
+            <span class="alert-sub">Investigation Agent has TF-IDF clustered <strong>${count} matching reports</strong>.
+            This is a <strong>confirmed coordinated attack</strong>. Authority packet auto-generated.
+            <a href="dashboard.html" class="alert-link">Download Authority Packet →</a></span>
         `;
-        communityAlertBanner.style.display = 'block';
-    } else if (count > 0) {
-        // Some similar reports but below campaign threshold
-        communityAlertBanner.className = 'community-alert-banner';
-        communityAlertBanner.innerHTML = `🚨 <strong>AI Cluster Match:</strong> Our system detected <span id="similarCount">${count}</span> similar messages targeting the community. Need <strong>${5 - count} more</strong> to trigger campaign escalation.`;
-        communityAlertBanner.style.display = 'block';
+    } else if (count === 4) {
+        // Level 4 — Serious threat, 1 away from campaign
+        communityAlertBanner.className = 'community-alert-banner alert-level-4';
+        communityAlertBanner.innerHTML = `
+            🔴 <strong>SERIOUS THREAT — ${count} reports detected</strong><br>
+            <span class="alert-sub">Pattern growing rapidly. <strong>1 more report</strong> will trigger full campaign escalation and authority notification.</span>
+        `;
+    } else if (count === 3) {
+        // Level 3 — Emerging pattern
+        communityAlertBanner.className = 'community-alert-banner alert-level-3';
+        communityAlertBanner.innerHTML = `
+            🟠 <strong>EMERGING PATTERN — ${count} similar reports detected</strong><br>
+            <span class="alert-sub">Investigation Agent is clustering similar reports. <strong>${5 - count} more</strong> needed to trigger authority escalation.</span>
+        `;
+    } else if (count === 2) {
+        // Level 2 — Emerging pattern
+        communityAlertBanner.className = 'community-alert-banner alert-level-2';
+        communityAlertBanner.innerHTML = `
+            🟡 <strong>EMERGING PATTERN — ${count} similar reports detected</strong><br>
+            <span class="alert-sub">A second matching report has been detected. System is monitoring for further activity. <strong>${5 - count} more</strong> needed to escalate.</span>
+        `;
     } else {
-        communityAlertBanner.style.display = 'none';
+        // Level 1 — First report, start monitoring
+        communityAlertBanner.className = 'community-alert-banner alert-level-1';
+        communityAlertBanner.innerHTML = `
+            🟢 <strong>FIRST REPORT — System Monitoring</strong><br>
+            <span class="alert-sub">This is the first report of this pattern. Sentinel is now monitoring for similar messages from the community.</span>
+        `;
     }
     
     // Update score value
